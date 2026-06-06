@@ -1,0 +1,102 @@
+{
+  "vps_ssh": "root@YOUR_VPS_IP",
+  "public_base": "https://YOUR_DOMAIN",
+  "ssh_opts": ["-N", "-o", "BatchMode=yes", "-o", "ExitOnForwardFailure=yes", "-o", "ServerAliveInterval=30", "-o", "ServerAliveCountMax=3"],
+  "mcps": [
+    {
+      "id": "blender",
+      "name": "Blender",
+      "local_port": 18000,
+      "vps_port": 8010,
+      "path": "/bmcp/",
+      "cwd": "C:/blender-open-mcp",
+      "server": ["C:/blender-open-mcp/.venv/Scripts/python.exe", "src/blender_open_mcp/server.py", "--host", "127.0.0.1", "--port", "18000", "--transport", "streamable-http"],
+      "app_hint": "Blender 실행 + N패널 'Start MCP Server'(9876)",
+      "install": {
+        "check": "C:/blender-open-mcp/.venv/Scripts/python.exe",
+        "steps": [
+          ["git", "clone", "https://github.com/dhakalnirajan/blender-open-mcp.git", "C:/blender-open-mcp"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/blender-open-mcp/.venv"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/blender-open-mcp/.venv/Scripts/python.exe", "-e", "C:/blender-open-mcp"]
+        ]
+      }
+    },
+    {
+      "id": "cad",
+      "name": "CAD",
+      "local_port": 18001,
+      "vps_port": 8011,
+      "path": "/cmcp/",
+      "cwd": "C:/cad-mcp",
+      "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18001", "--transport", "streamablehttp", "--pass-environment", "--", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "C:/cad-mcp/src/server.py"],
+      "app_hint": "ZWCAD/AutoCAD 실행",
+      "install": {
+        "check": "C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe",
+        "steps": [
+          ["git", "clone", "https://github.com/YOUR_GITHUB/cad-mcp.git", "C:/cad-mcp"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/cad-mcp/.proxy-venv"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "mcp-proxy"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "-r", "C:/cad-mcp/requirements.txt"]
+        ]
+      },
+      "extra_endpoints": [
+        {
+          "id": "cad_upload",
+          "label": "upload",
+          "path": "/cmcp-upload/",
+          "local_port": 18003,
+          "vps_port": 8013,
+          "cwd": "C:/cad-mcp",
+          "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18003", "--transport", "streamablehttp", "--pass-environment", "--", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "C:/cad-mcp/src/server.py"]
+        }
+      ]
+    },
+    {
+      "id": "photoshop",
+      "name": "Photoshop",
+      "local_port": 8002,
+      "vps_port": 8012,
+      "path": "/pmcp/",
+      "cwd": "C:/photoshop-mcp-plus",
+      "server": ["C:/photoshop-mcp-plus/.venv/Scripts/python.exe", "C:/photoshop-mcp-plus/server.py", "--host", "127.0.0.1", "--port", "8002"],
+      "app_hint": "Photoshop 2026 실행 + 문서 열기(영문 경로)",
+      "install": {
+        "check": "C:/photoshop-mcp-plus/.venv/Scripts/python.exe",
+        "steps": [
+          ["git", "clone", "https://github.com/YOUR_GITHUB/photoshop-mcp-plus.git", "C:/photoshop-mcp-plus"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/photoshop-mcp-plus/.venv"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/photoshop-mcp-plus/.venv/Scripts/python.exe", "mcp[cli]", "photoshop-python-api"]
+        ]
+      }
+    },
+    {
+      "id": "hwp",
+      "name": "HWP 2024",
+      "local_port": 18004,
+      "vps_port": 8014,
+      "path": "/hmcp/",
+      "cwd": "C:/scratch/mcpworld/hwp-mcp",
+      "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18004", "--transport", "streamablehttp", "--pass-environment", "--", "C:/scratch/mcpworld/hwp-mcp/.venv/Scripts/python.exe", "C:/scratch/mcpworld/hwp-mcp/hwp_mcp_stdio_server.py"],
+      "env": {"HWP_MCP_ALLOW_LAUNCH": "0"},
+      "app_hint": "한컴 한글 2024 · 먼저 HWP 실행/문서 열기 필요(ALLOW_LAUNCH=0)",
+      "install": {
+        "check": "C:/scratch/mcpworld/hwp-mcp/.venv/Scripts/python.exe",
+        "steps": [
+          ["git", "clone", "https://github.com/jkf87/hwp-mcp.git", "C:/scratch/mcpworld/hwp-mcp"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/scratch/mcpworld/hwp-mcp/.venv"],
+          ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/scratch/mcpworld/hwp-mcp/.venv/Scripts/python.exe", "-r", "C:/scratch/mcpworld/hwp-mcp/requirements.txt"]
+        ]
+      }
+    },
+    {
+      "id": "office",
+      "name": "OfficeMCP (Word/Excel/PPT)",
+      "local_port": 18005,
+      "vps_port": 8015,
+      "path": "/omcp/",
+      "cwd": "C:/scratch/mcpworld",
+      "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18005", "--transport", "streamablehttp", "--pass-environment", "--", "C:/Users/YOUR_NAME/.local/bin/uvx.exe", "officemcp", "stdio", "--folder", "C:/@OfficeMCP"],
+      "app_hint": "MS Office(Word/Excel/PowerPoint) 설치됨 · COM 자동 제어 (D:\\ 없으니 --folder C:/@OfficeMCP 필수)"
+    }
+  ]
+}

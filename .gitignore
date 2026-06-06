@@ -1,0 +1,27 @@
+# 개인 설정 — config.example.json을 복사해서 사용 (커밋 금지)
+config.json
+
+# VPS nginx 설정 사본 (개인·민감)
+automaton-dashboard-http.conf.remote
+*.conf.remote
+
+# 가상환경 / 파이썬
+.venv/
+.proxy-venv/
+venv/
+__pycache__/
+*.pyc
+
+# 런타임 로그 / 백업
+logs/
+*.log
+*.bak
+*.bak-*
+*.bak_*
+
+# 서드파티 하위 프로젝트
+hwp-mcp/
+
+# OS
+Thumbs.db
+.DS_Store
