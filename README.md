@@ -1,5 +1,18 @@
 # MCP World — Blender / CAD / Photoshop / HWP / Office 통합 컨트롤러
 
+**한국어** | [English](README_en.md)
+
+![License](https://img.shields.io/badge/license-MIT-green)
+![Python](https://img.shields.io/badge/python-3.10%2B-blue)
+![Platform](https://img.shields.io/badge/platform-Windows-lightgrey)
+![MCP](https://img.shields.io/badge/MCP-Model_Context_Protocol-orange)
+
+> ### 🌐 Claude뿐 아니라 **ChatGPT 웹브라우저에서도** 로컬 MCP를 씁니다
+> MCP는 보통 Claude Desktop 같은 데스크톱 클라이언트에서만 연결된다고 알려져 있지만,
+> **MCP World**는 로컬 MCP 서버를 **SSH 역터널 → 공개 URL**로 노출해 **ChatGPT 개발자 모드
+> 커넥터**에 그대로 연결합니다. 즉 별도 데스크톱 앱 없이 **ChatGPT 웹에서** Blender·CAD·
+> Photoshop·한글·Office를 자연어로 제어할 수 있습니다.
+
 ChatGPT 웹에 연결되는 로컬 MCP(서버 + VPS 역터널)들을 한 창에서 켜고 끄는 GUI.
 
 ## 설정 (처음 한 번)
