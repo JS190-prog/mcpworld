@@ -14,6 +14,8 @@
 > control Blender, CAD, Photoshop, Hangul (HWP), and Office in natural language
 > straight from **ChatGPT on the web** — no separate desktop app required.
 
+![MCP World GUI](docs/screenshot.png)
+
 A GUI to start/stop local MCPs (servers + VPS reverse tunnels) that connect to ChatGPT web, all from one window.
 
 ## Setup (first time)

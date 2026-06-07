@@ -13,6 +13,8 @@
 > 커넥터**에 그대로 연결합니다. 즉 별도 데스크톱 앱 없이 **ChatGPT 웹에서** Blender·CAD·
 > Photoshop·한글·Office를 자연어로 제어할 수 있습니다.
 
+![MCP World GUI](docs/screenshot.png)
+
 ChatGPT 웹에 연결되는 로컬 MCP(서버 + VPS 역터널)들을 한 창에서 켜고 끄는 GUI.
 
 ## 설정 (처음 한 번)
