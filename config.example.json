@@ -15,7 +15,7 @@
       "install": {
         "check": "C:/blender-open-mcp/.venv/Scripts/python.exe",
         "steps": [
-          ["git", "clone", "https://github.com/dhakalnirajan/blender-open-mcp.git", "C:/blender-open-mcp"],
+          ["git", "clone", "https://github.com/JS190-prog/blender-open-mcp.git", "C:/blender-open-mcp"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/blender-open-mcp/.venv"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/blender-open-mcp/.venv/Scripts/python.exe", "-e", "C:/blender-open-mcp"]
         ]
@@ -33,7 +33,7 @@
       "install": {
         "check": "C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe",
         "steps": [
-          ["git", "clone", "https://github.com/YOUR_GITHUB/cad-mcp.git", "C:/cad-mcp"],
+          ["git", "clone", "https://github.com/JS190-prog/cad-mcp.git", "C:/cad-mcp"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/cad-mcp/.proxy-venv"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "mcp-proxy"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "-r", "C:/cad-mcp/requirements.txt"]
@@ -63,7 +63,7 @@
       "install": {
         "check": "C:/photoshop-mcp-plus/.venv/Scripts/python.exe",
         "steps": [
-          ["git", "clone", "https://github.com/YOUR_GITHUB/photoshop-mcp-plus.git", "C:/photoshop-mcp-plus"],
+          ["git", "clone", "https://github.com/JS190-prog/photoshop-mcp-plus.git", "C:/photoshop-mcp-plus"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/photoshop-mcp-plus/.venv"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/photoshop-mcp-plus/.venv/Scripts/python.exe", "mcp[cli]", "photoshop-python-api"]
         ]
@@ -82,7 +82,7 @@
       "install": {
         "check": "C:/scratch/mcpworld/hwp-mcp/.venv/Scripts/python.exe",
         "steps": [
-          ["git", "clone", "https://github.com/jkf87/hwp-mcp.git", "C:/scratch/mcpworld/hwp-mcp"],
+          ["git", "clone", "https://github.com/JS190-prog/hwp-mcp.git", "C:/scratch/mcpworld/hwp-mcp"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "venv", "C:/scratch/mcpworld/hwp-mcp/.venv"],
           ["C:/Users/YOUR_NAME/.local/bin/uv.exe", "pip", "install", "--python", "C:/scratch/mcpworld/hwp-mcp/.venv/Scripts/python.exe", "-r", "C:/scratch/mcpworld/hwp-mcp/requirements.txt"]
         ]

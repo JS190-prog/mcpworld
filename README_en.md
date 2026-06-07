@@ -27,10 +27,10 @@ A GUI to start/stop local MCPs (servers + VPS reverse tunnels) that connect to C
 
 > For VPS nginx routing, see **"Add a new MCP on the VPS"** below.
 
-> ℹ️ **CAD & Photoshop MCP** are custom/in-house servers with no public upstream.
-> To use them, replace the `install` repo URL (`YOUR_GITHUB`) in `config.json` with
-> your own repository or a compatible MCP. Blender & HWP use public sources, and
-> Office uses `uvx`, so they work as-is.
+> ℹ️ All five MCPs install automatically from **public repos (github.com/JS190-prog/*)**
+> or PyPI (`uvx`). `config.example.json` already points to the real repos — just fill in
+> your **VPS/domain** and they clone & install on start. To customize, fork each repo
+> and change its `install` URL.
 
 ## Layout
 - `mcpworld.pyw` — the GUI (tkinter + pystray tray)
