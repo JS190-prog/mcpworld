@@ -83,6 +83,19 @@ def port_open(port, host="127.0.0.1", timeout=0.4):
         return False
 
 
+def mask_host(url):
+    """표시(화면·로그)용으로 URL의 도메인만 '•'로 가린다. scheme과 경로는 유지.
+    클립보드 복사·터널 연결 등 실제 동작에는 항상 원본 URL을 쓴다(개인정보 보호용 표시 전용)."""
+    sep = "://"
+    i = url.find(sep)
+    if i == -1:
+        return url
+    start = i + len(sep)
+    j = url.find("/", start)
+    host_end = j if j != -1 else len(url)
+    return url[:start] + "•" * 10 + url[host_end:]
+
+
 def pid_on_port(port):
     try:
         out = subprocess.run(["netstat", "-ano"], capture_output=True, text=True,
@@ -369,7 +382,8 @@ class App:
                 row=1, column=0, columnspan=6, sticky="w", padx=8, pady=(0, 4))
             self.rows[m.cfg["id"]] = (srv, tun)
 
-        base = self.g.get("public_base", "https://YOUR_DOMAIN")
+        # 화면 표시용은 도메인을 가린다(개인정보 보호). 실제 URL은 'URL' 버튼이 클립보드로 복사.
+        base = mask_host(self.g.get("public_base", "https://YOUR_DOMAIN"))
         paths = ",".join(m.cfg["path"].strip("/") for m in self.mcps)
         info = tk.Label(
             r, fg="#555", justify="left", wraplength=640,
@@ -437,13 +451,14 @@ class App:
     def _copy(self, m):
         urls = m.public_urls()
         self.root.clipboard_clear()
-        self.root.clipboard_append("\n".join(urls))
+        self.root.clipboard_append("\n".join(urls))  # 클립보드엔 실제 URL을 그대로 복사
+        shown = [mask_host(u) for u in urls]          # 화면 로그엔 도메인 가린 버전만 표시
         if len(urls) > 1:
             self.log("[%s] URL %d개 복사 (줄바꿈 분리):" % (m.name, len(urls)))
-            for u in urls:
+            for u in shown:
                 self.log("    " + u)
         else:
-            self.log("[%s] URL 복사: %s" % (m.name, urls[0]))
+            self.log("[%s] URL 복사: %s" % (m.name, shown[0]))
 
     def _compute_lights(self):
         """상태등 색상 계산. port_open(블로킹 소켓) + psutil 스캔을 포함하므로
