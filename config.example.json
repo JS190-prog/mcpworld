@@ -29,7 +29,8 @@
       "path": "/cmcp/",
       "cwd": "C:/cad-mcp",
       "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18001", "--transport", "streamablehttp", "--pass-environment", "--", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "C:/cad-mcp/src/server.py"],
-      "app_hint": "ZWCAD/AutoCAD 실행",
+      "env": {"CAD_MCP_LAUNCH_IF_MISSING": "1"},
+      "app_hint": "ZWCAD/AutoCAD 자동 실행(CAD_MCP_LAUNCH_IF_MISSING=1) · ChatGPT DXF를 창에 가시 열기",
       "install": {
         "check": "C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe",
         "steps": [
@@ -38,18 +39,7 @@
           ["uv", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "mcp-proxy"],
           ["uv", "pip", "install", "--python", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "-r", "C:/cad-mcp/requirements.txt"]
         ]
-      },
-      "extra_endpoints": [
-        {
-          "id": "cad_upload",
-          "label": "upload",
-          "path": "/cmcp-upload/",
-          "local_port": 18003,
-          "vps_port": 8013,
-          "cwd": "C:/cad-mcp",
-          "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18003", "--transport", "streamablehttp", "--pass-environment", "--", "C:/cad-mcp/.proxy-venv/Scripts/python.exe", "C:/cad-mcp/src/server.py"]
-        }
-      ]
+      }
     },
     {
       "id": "photoshop",
