@@ -208,3 +208,11 @@ https://YOUR_DOMAIN/amcp/mcp
 ## ⚠️ 면책 조항 (Disclaimer)
 
 mcpworld와 연결된 MCP들은 AI 모델이 로컬 프로그램(Blender·CAD·Photoshop·HWP·Office·로컬 코드)을 직접 제어하고 AI가 생성한 명령·코드를 실행하게 합니다. AI의 동작은 예측과 다를 수 있으며, 문서·파일·데이터 손상 등 사용 중 발생하는 어떠한 손해에 대해서도 개발자는 책임을 지지 않습니다. 중요한 데이터는 반드시 백업하고, 공개 터널은 쓸 때만 켜세요. (LICENSE의 무보증 조항 참조)
+
+### 보안 경고
+
+VPS 역터널로 공개된 MCP URL은 기본 무인증입니다. URL을 아는 누구나 로컬 프로그램을 제어할 수 있으므로 URL을 외부에 공유하지 말고, 사용하지 않을 때는 터널을 꺼두세요. 무인증 공개 운영으로 발생하는 보안 사고에 대해 개발자는 책임을 지지 않습니다.
+
+### 상표 고지
+
+Blender, AutoCAD, ZWCAD, Photoshop, 한컴오피스 한글, Microsoft Office, ChatGPT 등은 각 소유자의 상표입니다. 이 프로젝트는 Blender Foundation, Autodesk, ZWSOFT, Adobe, 한글과컴퓨터, Microsoft, OpenAI와 무관한 독립 프로젝트입니다.

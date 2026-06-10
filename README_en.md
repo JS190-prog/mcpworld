@@ -208,3 +208,11 @@ https://YOUR_DOMAIN/amcp/mcp
 ## ⚠️ Disclaimer
 
 The MCPs connected through mcpworld let AI models directly control local applications (Blender, CAD, Photoshop, HWP, Office, local code) and execute AI-generated commands/code. AI behavior may differ from expectations and can damage documents, files, or data. The authors take no responsibility for any damage caused by using this software. Always back up important data, and keep the public tunnel on only while in use. (See the no-warranty clause in the LICENSE.)
+
+### Security Warning
+
+MCP URLs exposed through the VPS reverse tunnel have no authentication by default. Anyone who knows the URL can control your local applications. Do not share the URLs, and keep the tunnel off when not in use. The authors take no responsibility for security incidents caused by running the public tunnel.
+
+### Trademarks
+
+Blender, AutoCAD, ZWCAD, Photoshop, Hancom Office HWP, Microsoft Office, and ChatGPT are trademarks of their respective owners. This is an independent project not affiliated with or endorsed by the Blender Foundation, Autodesk, ZWSOFT, Adobe, Hancom, Microsoft, or OpenAI.
