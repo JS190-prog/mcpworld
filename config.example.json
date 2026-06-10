@@ -87,6 +87,26 @@
       "cwd": "C:/scratch/mcpworld",
       "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18005", "--transport", "streamablehttp", "--pass-environment", "--", "uvx", "officemcp", "stdio", "--folder", "C:/@OfficeMCP"],
       "app_hint": "MS Office(Word/Excel/PowerPoint) 설치됨 · COM 자동 제어 (D:\\ 없으니 --folder C:/@OfficeMCP 필수)"
+    },
+    {
+      "id": "localcode",
+      "name": "Local Code (코드 편집)",
+      "local_port": 18006,
+      "vps_port": 8017,
+      "path": "/lcmcp/",
+      "cwd": "C:/local-code-mcp",
+      "server": ["C:/cad-mcp/.proxy-venv/Scripts/mcp-proxy.exe", "--host", "127.0.0.1", "--port", "18006", "--transport", "streamablehttp", "--pass-environment", "--", "C:/local-code-mcp/.venv/Scripts/python.exe", "-m", "local_code_mcp.server"],
+      "env": {"LOCAL_CODE_MCP_CONFIG": "C:/local-code-mcp/config.json"},
+      "app_hint": "allowed_roots 안의 로컬 코드 읽기/패치/백업/테스트/ZIP · config.json으로 허용 루트 관리",
+      "install": {
+        "check": "C:/local-code-mcp/.venv/Scripts/python.exe",
+        "steps": [
+          ["git", "clone", "https://github.com/JS190-prog/local-code-mcp.git", "C:/local-code-mcp"],
+          ["uv", "venv", "C:/local-code-mcp/.venv"],
+          ["uv", "pip", "install", "--python", "C:/local-code-mcp/.venv/Scripts/python.exe", "-e", "C:/local-code-mcp", "mcp>=1.0.0", "pytest"],
+          ["cmd", "/c", "if not exist C:\\local-code-mcp\\config.json copy C:\\local-code-mcp\\config.example.json C:\\local-code-mcp\\config.json"]
+        ]
+      }
     }
   ]
 }

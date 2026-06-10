@@ -51,6 +51,7 @@ A GUI to start/stop local MCPs (servers + VPS reverse tunnels) that connect to C
 | Photoshop | 8002 | 8012 | https://YOUR_DOMAIN/pmcp/mcp |
 | HWP 2024 | 18004 | 8014 | https://YOUR_DOMAIN/hmcp/mcp |
 | Office | 18005 | 8015 | https://YOUR_DOMAIN/omcp/mcp |
+| Local Code | 18006 | 8017 | https://YOUR_DOMAIN/lcmcp/mcp |
 
 Each row: **Server** (local port) + **Tunnel** (SSH reverse tunnel) status lights → both green means it's usable from ChatGPT.
 
