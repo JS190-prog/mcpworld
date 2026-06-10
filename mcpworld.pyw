@@ -11,7 +11,7 @@ import sys
 import threading
 import time
 import tkinter as tk
-from tkinter import ttk, scrolledtext, messagebox
+from tkinter import ttk, scrolledtext, messagebox, filedialog
 from pathlib import Path
 
 BASE = Path(__file__).resolve().parent
@@ -96,22 +96,115 @@ def mask_host(url):
     return url[:start] + "•" * 10 + url[host_end:]
 
 
-def pid_on_port(port):
+def pids_on_port(port):
+    """로컬 TCP 포트를 LISTEN 중인 PID 목록을 반환한다."""
+    pids = []
     try:
         out = subprocess.run(["netstat", "-ano"], capture_output=True, text=True,
                              creationflags=CREATE_NO_WINDOW).stdout
+        for line in out.splitlines():
+            if (":%d " % port) in line and "LISTENING" in line.upper():
+                pid = line.split()[-1].strip()
+                if pid and pid not in pids:
+                    pids.append(pid)
     except Exception:
-        return None
-    for line in out.splitlines():
-        if (":%d " % port) in line and "LISTENING" in line.upper():
-            return line.split()[-1].strip()
-    return None
+        pass
+
+    # netstat가 실패하거나 결과가 빠진 경우 psutil로 보강한다.
+    if psutil is not None:
+        try:
+            for c in psutil.net_connections(kind="tcp"):
+                if not c.pid or not c.laddr:
+                    continue
+                if c.status == psutil.CONN_LISTEN and getattr(c.laddr, "port", None) == port:
+                    pid = str(c.pid)
+                    if pid not in pids:
+                        pids.append(pid)
+        except Exception:
+            pass
+    return pids
+
+
+def pid_on_port(port):
+    pids = pids_on_port(port)
+    return pids[0] if pids else None
 
 
 def kill_pid(pid, tree=True):
+    """PID를 종료하고 성공 여부를 반환한다. 실패해도 예외를 밖으로 던지지 않는다."""
+    if not pid:
+        return False
     args = ["taskkill", "/F"] + (["/T"] if tree else []) + ["/PID", str(pid)]
-    subprocess.run(args, capture_output=True, creationflags=CREATE_NO_WINDOW)
+    try:
+        r = subprocess.run(args, capture_output=True, text=True,
+                           encoding="utf-8", errors="replace",
+                           creationflags=CREATE_NO_WINDOW)
+        text = ((r.stdout or "") + "\n" + (r.stderr or "")).lower()
+        return r.returncode == 0 or "not found" in text or "찾을 수" in text
+    except Exception:
+        return False
 
+
+def _norm_cmdline(cmdline):
+    return " ".join(str(x) for x in (cmdline or [])).replace("\\", "/").lower()
+
+
+def _cmdline_has_arg(cmdline, opt, value):
+    parts = [str(x) for x in (cmdline or [])]
+    value = str(value)
+    for i, part in enumerate(parts):
+        if part == opt and i + 1 < len(parts) and parts[i + 1] == value:
+            return True
+        if part.startswith(opt + "=") and part.split("=", 1)[1] == value:
+            return True
+    return False
+
+
+def server_process_pids(cfg):
+    """
+    config.json의 server 정의를 기준으로 MCP 서버 관련 프로세스를 찾는다.
+
+    중요: 사용자가 열어둔 실제 한글 GUI(Hwp.exe 등)는 종료 대상에서 제외한다.
+    HWP 중지 시 종료해야 하는 것은 mcp-proxy.exe와
+    hwp_mcp_stdio_server.py를 실행 중인 python.exe뿐이다.
+    """
+    if psutil is None:
+        return []
+
+    local_port = cfg.get("local_port")
+    server = [str(x) for x in cfg.get("server", [])]
+    script_needles = []
+    for arg in server:
+        norm = arg.replace("\\", "/").lower()
+        base = os.path.basename(norm)
+        if norm.endswith((".py", ".js", ".mjs", ".ts")):
+            script_needles.extend([norm, base])
+
+    pids = []
+    protected_hwp_names = {"hwp.exe", "hwpctrl.exe", "hwpviewer.exe"}
+    for p in psutil.process_iter(["pid", "name", "cmdline"]):
+        try:
+            name = (p.info.get("name") or "").lower()
+            if name in protected_hwp_names:
+                continue
+
+            cmdline = p.info.get("cmdline") or []
+            cmd = _norm_cmdline(cmdline)
+            matched = False
+
+            if local_port is not None and "mcp-proxy" in (name + " " + cmd):
+                matched = _cmdline_has_arg(cmdline, "--port", local_port)
+
+            if not matched and script_needles:
+                matched = any(needle and needle in cmd for needle in script_needles)
+
+            if matched:
+                pid = p.pid
+                if pid not in pids:
+                    pids.append(pid)
+        except Exception:
+            continue
+    return pids
 
 def ssh_tunnel_pids(vps_port):
     """vps_port 로 SSH 역터널(-R <vps_port>:...)을 하는 모든 ssh 프로세스 PID.
@@ -176,12 +269,34 @@ class Mcp:
             return False
         return not os.path.exists(inst["check"])
 
+    def _install_step_should_skip(self, step):
+        """이미 존재하는 로컬 프로그램 폴더에 대해 git clone 단계가 실패하지 않도록 건너뛴다.
+
+        OfficeMCP/HWP처럼 사용자가 기존 프로그램 폴더를 C 드라이브 최상위로
+        이동한 경우, install.check(.venv 실행 파일)는 없을 수 있지만 소스 폴더는
+        이미 존재한다. 이때 git clone <url> <target>을 그대로 실행하면
+        "destination path ... already exists"로 설치가 중단되므로, 대상 폴더가
+        있으면 clone만 skip하고 뒤의 venv/pip 단계는 계속 실행한다.
+        """
+        try:
+            if len(step) >= 4 and step[0].lower() == "git" and step[1].lower() == "clone":
+                target = step[-1]
+                if os.path.exists(target):
+                    return "대상 폴더 이미 있음: %s" % target
+        except Exception:
+            pass
+        return None
+
     def _install(self):
         """install.steps를 순차 실행. 모든 단계 성공 + check 충족 시 True."""
         inst = self.cfg.get("install", {})
         steps = inst.get("steps", [])
         self.log("[%s] 자동 설치 시작 (%d단계)..." % (self.name, len(steps)))
         for i, step in enumerate(steps, 1):
+            skip_reason = self._install_step_should_skip(step)
+            if skip_reason:
+                self.log("[%s] 설치 (%d/%d) 건너뜀: %s" % (self.name, i, len(steps), skip_reason))
+                continue
             self.log("[%s] 설치 (%d/%d): %s" % (self.name, i, len(steps), " ".join(step)))
             try:
                 r = subprocess.run(step, cwd=inst.get("cwd"), capture_output=True,
@@ -287,13 +402,20 @@ class Mcp:
         rec = self._eprocs.get(eid, {})
         if rec.get("tunnel") and rec["tunnel"].poll() is None:
             kill_pid(rec["tunnel"].pid, tree=False)
+
+        targets = set(pids_on_port(lp)) | set(server_process_pids(e))
         if rec.get("server") and rec["server"].poll() is None:
-            kill_pid(rec["server"].pid)
-        pid = pid_on_port(lp)
-        if pid:
+            targets.add(rec["server"].pid)
+        for pid in targets:
             kill_pid(pid)
+
+        time.sleep(0.4)
+        remaining = set(pids_on_port(lp)) | set(server_process_pids(e))
         self._eprocs[eid] = {"server": None, "tunnel": None}
-        self.log("[%s] 중지" % tag)
+        if remaining:
+            self.log("[%s] 중지 실패/부분 실패 — 남은 PID: %s" % (tag, ", ".join(map(str, sorted(remaining)))), level="error")
+        else:
+            self.log("[%s] 중지" % tag)
 
     def stop(self):
         for e in self.extras:
@@ -305,15 +427,29 @@ class Mcp:
         if self.tunnel_proc and self.tunnel_proc.poll() is None:
             kill_pid(self.tunnel_proc.pid, tree=False)
         self.tunnel_proc = None
-        # 2) 서버: GUI Popen + 외부(로컬 포트 점유 프로세스)
+
+        # 2) 서버: GUI Popen + 외부(로컬 포트 점유 프로세스) +
+        #    mcp-proxy 뒤에 남은 stdio 자식 서버까지 종료한다.
+        targets = set(pids_on_port(self.local_port)) | set(server_process_pids(self.cfg))
         if self.server_proc and self.server_proc.poll() is None:
-            kill_pid(self.server_proc.pid)
-        self.server_proc = None
-        pid = pid_on_port(self.local_port)
-        if pid:
+            targets.add(self.server_proc.pid)
+        for pid in targets:
             kill_pid(pid)
+        self.server_proc = None
+
+        time.sleep(0.6)
+        remaining_server = set(pids_on_port(self.local_port)) | set(server_process_pids(self.cfg))
+        remaining_tunnel = set(ssh_tunnel_pids(self.vps_port))
         extra = (" (외부 터널 %d개 포함)" % len(ext)) if ext else ""
-        self.log("[%s] 중지 — 서버+터널%s" % (self.name, extra))
+        if remaining_server or remaining_tunnel:
+            details = []
+            if remaining_server:
+                details.append("서버 PID: %s" % ", ".join(map(str, sorted(remaining_server))))
+            if remaining_tunnel:
+                details.append("터널 PID: %s" % ", ".join(map(str, sorted(remaining_tunnel))))
+            self.log("[%s] 중지 실패/부분 실패 — %s" % (self.name, " / ".join(details)), level="error")
+        else:
+            self.log("[%s] 중지 — 서버+터널%s" % (self.name, extra))
 
     def tunnel_alive(self):
         # 외부에서 띄운 터널도 초록으로 감지 (psutil 있을 때)
@@ -352,7 +488,6 @@ class App:
     def _build(self):
         r = self.root
         r.title("MCP World — Blender / CAD / Photoshop / HWP / Office")
-        r.geometry("660x600")
         r.minsize(560, 480)
 
         top = ttk.Frame(r)
@@ -361,6 +496,7 @@ class App:
         ttk.Button(top, text="■ 전체 중지", command=lambda: self._all("stop")).pack(side="left", padx=6)
         ttk.Button(top, text="🔄 새로고침", command=self._update_lights).pack(side="left")
         ttk.Button(top, text="⚙ 설정", command=self._open_settings).pack(side="left", padx=6)
+        ttk.Button(top, text="⟳ 재시작", command=self._restart).pack(side="left")
 
         for m in self.mcps:
             fr = ttk.LabelFrame(r, text=m.name)
@@ -402,6 +538,13 @@ class App:
         if HAS_TRAY:
             ttk.Button(bottom, text="트레이로 최소화", command=self._hide).pack(side="left")
         ttk.Button(bottom, text="종료(서버는 유지)", command=self._quit).pack(side="right")
+
+        # MCP 개수에 따라 필요 높이가 달라지므로, 처음 뜰 때 로그창과 하단 버튼까지
+        # 모두 보이도록 콘텐츠 요구 크기에 맞춰 창 크기를 계산한다(화면 높이 초과 시 제한).
+        r.update_idletasks()
+        req_h = r.winfo_reqheight()
+        max_h = r.winfo_screenheight() - 120
+        r.geometry("660x%d" % max(min(req_h, max_h), 480))
 
     def log(self, msg, level=None):
         ts = time.strftime("%H:%M:%S")
@@ -485,6 +628,109 @@ class App:
                 row[0].config(fg=srv_c)
                 row[1].config(fg=tun_c)
 
+    def _attach_allowed_roots_editor(self, mf, row, lc_path):
+        """local-code-mcp config.json의 allowed_roots를 목록으로 보여주고 ＋/－로 편집한다.
+
+        mcpworld config.json의 '저장' 버튼과 달리 ＋/－ 즉시 해당 파일에 반영된다.
+        local-code-mcp는 도구 호출 시마다 config를 다시 읽으므로 서버 재시작이 필요 없다.
+        """
+        def load_roots():
+            data = json.loads(Path(lc_path).read_text(encoding="utf-8"))
+            return [str(r) for r in data.get("allowed_roots", [])]
+
+        def save_roots(roots):
+            data = json.loads(Path(lc_path).read_text(encoding="utf-8"))
+            data["allowed_roots"] = roots
+            Path(lc_path).write_text(json.dumps(data, ensure_ascii=False, indent=2), encoding="utf-8")
+
+        ttk.Label(mf, text="허용 폴더(allowed_roots)", width=18).grid(row=row, column=0, sticky="nw", padx=6, pady=2)
+        fr = ttk.Frame(mf)
+        fr.grid(row=row, column=1, sticky="w", padx=6, pady=2)
+        lb = tk.Listbox(fr, width=78, height=5)
+        sb = ttk.Scrollbar(fr, orient="vertical", command=lb.yview)
+        lb.configure(yscrollcommand=sb.set)
+        lb.grid(row=0, column=0, rowspan=3, sticky="nsew")
+        sb.grid(row=0, column=1, rowspan=3, sticky="ns")
+
+        def refresh():
+            lb.delete(0, "end")
+            try:
+                roots = load_roots()
+            except Exception as e:
+                lb.insert("end", "(config 읽기 실패: %s)" % e)
+                return
+            for r in roots:
+                lb.insert("end", r)
+
+        def add_root(path):
+            p = str(path).strip().replace("\\", "/").rstrip("/")
+            if not p:
+                return False
+            try:
+                roots = load_roots()
+                if p in roots:
+                    messagebox.showinfo("허용 폴더", "이미 등록된 폴더입니다:\n%s" % p)
+                    return False
+                roots.append(p)
+                save_roots(roots)
+            except Exception as e:
+                messagebox.showerror("허용 폴더", "저장 실패: %s" % e)
+                return False
+            self.log("[LocalCode] 허용 폴더 추가: %s" % p)
+            refresh()
+            return True
+
+        def open_add_window():
+            top = tk.Toplevel(mf.winfo_toplevel())
+            top.title("허용 폴더 추가 — Local Code MCP")
+            top.geometry("560x180")
+            top.transient(mf.winfo_toplevel())
+            ttk.Label(top, text="버튼을 누르고 폴더를 고르면 바로 허용 목록에 추가됩니다.\n(반복 추가 가능 · 즉시 적용)",
+                      justify="center").pack(pady=(12, 6))
+
+            def pick():
+                p = filedialog.askdirectory(parent=top, title="허용할 폴더 선택", initialdir="C:/")
+                if p:
+                    add_root(p)
+
+            ttk.Button(top, text="📂 폴더 선택해서 추가", command=pick).pack(pady=4, ipadx=14, ipady=4)
+            manf = ttk.Frame(top)
+            manf.pack(pady=4)
+            mv = tk.StringVar()
+            ttk.Entry(manf, textvariable=mv, width=52).pack(side="left", padx=4)
+
+            def add_manual():
+                if add_root(mv.get()):
+                    mv.set("")
+
+            ttk.Button(manf, text="직접 입력 추가", command=add_manual).pack(side="left")
+            ttk.Button(top, text="닫기", command=top.destroy).pack(pady=6)
+
+        def remove_selected():
+            sel = lb.curselection()
+            if not sel:
+                messagebox.showinfo("허용 폴더", "삭제할 폴더를 목록에서 먼저 선택하세요.")
+                return
+            target = lb.get(sel[0])
+            try:
+                roots = load_roots()
+                if target in roots:
+                    roots.remove(target)
+                    save_roots(roots)
+                    self.log("[LocalCode] 허용 폴더 삭제: %s" % target)
+            except Exception as e:
+                messagebox.showerror("허용 폴더", "저장 실패: %s" % e)
+                return
+            refresh()
+
+        btnf = ttk.Frame(fr)
+        btnf.grid(row=0, column=2, sticky="n", padx=(6, 0))
+        ttk.Button(btnf, text="＋", width=3, command=open_add_window).pack(pady=(0, 3))
+        ttk.Button(btnf, text="－", width=3, command=remove_selected).pack()
+        ttk.Label(fr, text="＋/－는 %s에 즉시 적용 (별도 저장 불필요)" % lc_path,
+                  foreground="#777").grid(row=3, column=0, sticky="w", pady=(2, 0))
+        refresh()
+
     def _open_settings(self):
         """현재 config.json의 모든 설정을 편집하는 창(저장 시 MCP World 재시작 후 적용)."""
         try:
@@ -537,6 +783,9 @@ class App:
             srvt.insert("1.0", "\n".join(m.get("server", [])))
             srvt.grid(row=r0 + 1, column=1, sticky="w", padx=6, pady=2)
             w["_server"] = srvt
+            lc_path = m.get("env", {}).get("LOCAL_CODE_MCP_CONFIG")
+            if lc_path:
+                self._attach_allowed_roots_editor(mf, r0 + 2, lc_path)
             vars_mcp.append((m, w))
 
         def do_save():
@@ -671,6 +920,33 @@ class App:
             self.root.after(0, self.root.destroy)
         except Exception:
             pass
+
+    def _restart(self):
+        """GUI 자신만 재실행한다(서버/터널 프로세스는 유지). 설정·코드 변경 적용용."""
+        global _single_instance_sock
+        self.log("MCP World 재시작...")
+        self._stop_poll = True
+        if self._tray:
+            try:
+                self._tray.stop()
+            except Exception:
+                pass
+        # 새 인스턴스가 단일 인스턴스 락을 잡을 수 있도록 먼저 해제한다.
+        try:
+            if _single_instance_sock:
+                _single_instance_sock.close()
+                _single_instance_sock = None
+        except Exception:
+            pass
+        exe = Path(sys.executable)
+        pythonw = exe.with_name("pythonw.exe")
+        cmd = [str(pythonw if pythonw.exists() else exe), str(BASE / "mcpworld.pyw")]
+        try:
+            subprocess.Popen(cmd, cwd=str(BASE), creationflags=CREATE_NO_WINDOW)
+        except Exception as e:
+            messagebox.showerror("재시작", "새 인스턴스 실행 실패: %s" % e)
+            return
+        self.root.destroy()
 
 
 def main():
