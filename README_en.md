@@ -204,3 +204,7 @@ https://YOUR_DOMAIN/amcp/mcp
 - The window's X button minimizes to the tray (keeps running). The tray icon quits.
 - "Quit (keep servers)" closes only the GUI; servers/tunnels keep running in the background → to fully stop, use **Stop All** first.
 - It is an unauthenticated public endpoint, so only turn it on while in use.
+
+## ⚠️ Disclaimer
+
+The MCPs connected through mcpworld let AI models directly control local applications (Blender, CAD, Photoshop, HWP, Office, local code) and execute AI-generated commands/code. AI behavior may differ from expectations and can damage documents, files, or data. The authors take no responsibility for any damage caused by using this software. Always back up important data, and keep the public tunnel on only while in use. (See the no-warranty clause in the LICENSE.)
