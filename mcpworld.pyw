@@ -497,6 +497,7 @@ class App:
         ttk.Button(top, text="🔄 새로고침", command=self._update_lights).pack(side="left")
         ttk.Button(top, text="⚙ 설정", command=self._open_settings).pack(side="left", padx=6)
         ttk.Button(top, text="⟳ 재시작", command=self._restart).pack(side="left")
+        ttk.Button(top, text="⟳ 전체 재시작", command=self._full_restart).pack(side="left", padx=6)
 
         for m in self.mcps:
             fr = ttk.LabelFrame(r, text=m.name)
@@ -920,6 +921,35 @@ class App:
             self.root.after(0, self.root.destroy)
         except Exception:
             pass
+
+    def _full_restart(self):
+        """서버·터널 전체 중지 → 전체 시작 → GUI 재실행. 서버 코드 업데이트 반영용."""
+        if not messagebox.askyesno(
+                "전체 재시작",
+                "모든 서버·터널을 중지했다가 다시 시작한 뒤 GUI를 재실행합니다.\n"
+                "연결 중인 ChatGPT 세션은 끊깁니다. 계속할까요?"):
+            return
+        # 미설치 서버는 어차피 안 돌던 것 — 재시작 중 의도치 않은 자동 설치를 막는다.
+        targets = [m for m in self.mcps if not m.needs_install()]
+        skipped = [m.name for m in self.mcps if m.needs_install()]
+        if skipped:
+            self.log("전체 재시작: 미설치 서버 건너뜀 — %s" % ", ".join(skipped), level="warn")
+
+        def phase(fn, label):
+            self.log("전체 재시작: %s..." % label)
+            threads = [threading.Thread(target=fn, args=(m,), daemon=True)
+                       for m in targets]
+            for t in threads:
+                t.start()
+            for t in threads:
+                t.join()
+
+        def run():
+            phase(Mcp.stop, "서버/터널 중지")
+            phase(Mcp.start, "서버/터널 시작")
+            self.root.after(0, self._restart)
+
+        threading.Thread(target=run, daemon=True).start()
 
     def _restart(self):
         """GUI 자신만 재실행한다(서버/터널 프로세스는 유지). 설정·코드 변경 적용용."""
