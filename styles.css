@@ -127,8 +127,9 @@ p { color: var(--muted); line-height: 1.72; }
 
 .split { display: grid; grid-template-columns: 0.78fr 1.22fr; gap: 38px; align-items: start; }
 .cards { display: grid; gap: 16px; }
-.cards.three { grid-template-columns: repeat(3, 1fr); }
+.cards.three, .architecture-grid { grid-template-columns: repeat(3, 1fr); }
 .cards.tools { grid-template-columns: repeat(5, 1fr); }
+.architecture-grid { display: grid; gap: 16px; }
 .card, .price-card, .deploy-box, .dashboard-card, .admin-kpi-card, .plan-bar-card {
   border: 1px solid var(--line);
   border-radius: 8px;
@@ -147,7 +148,7 @@ p { color: var(--muted); line-height: 1.72; }
 .checklist li { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--surface); }
 .checklist li::before { content: "✓"; color: var(--good); margin-right: 10px; font-weight: 900; }
 
-.pricing { grid-template-columns: repeat(4, 1fr); }
+.pricing { grid-template-columns: repeat(5, 1fr); }
 .price-card.featured { border-color: rgba(86, 194, 163, 0.72); box-shadow: 0 0 0 1px rgba(86, 194, 163, 0.18); }
 .price { font-size: 30px; font-weight: 900; color: var(--text); margin: 8px 0; }
 .code-block {
@@ -227,7 +228,7 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 
 @media (max-width: 980px) {
   .hero, .split, .security-section { grid-template-columns: 1fr; }
-  .cards.three, .cards.tools, .pricing, .policy-grid, .timeline, .dashboard-grid, .admin-kpi-grid { grid-template-columns: 1fr 1fr; }
+  .cards.three, .cards.tools, .pricing, .policy-grid, .timeline, .dashboard-grid, .admin-kpi-grid, .architecture-grid { grid-template-columns: 1fr 1fr; }
   .nav-links { display: none; position: absolute; left: 22px; right: 22px; top: 72px; padding: 18px; border: 1px solid var(--line); border-radius: 8px; background: var(--surface); }
   .nav-links.open { display: grid; }
   .nav-toggle { display: block; }
@@ -237,7 +238,7 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 @media (max-width: 640px) {
   .section { padding: 64px 18px; }
   .hero { min-height: auto; padding-top: 56px; }
-  .cards.three, .cards.tools, .pricing, .policy-grid, .timeline, .dashboard-grid, .admin-kpi-grid { grid-template-columns: 1fr; }
+  .cards.three, .cards.tools, .pricing, .policy-grid, .timeline, .dashboard-grid, .admin-kpi-grid, .architecture-grid { grid-template-columns: 1fr; }
   .site-footer { flex-direction: column; }
   .nav-actions .btn { padding: 10px 12px; }
   .connector-row { grid-template-columns: 1fr; }

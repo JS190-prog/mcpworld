@@ -182,3 +182,14 @@ signOutButton?.addEventListener('click', () => {
   sessionStorage.removeItem('mcpworld_demo_user');
   window.location.href = 'index.html';
 });
+
+document.querySelectorAll('.dashboard-action').forEach((button) => {
+  button.addEventListener('click', () => {
+    button.textContent = '운영 API 연결 예정';
+    setTimeout(() => {
+      if (button.closest('.card')?.querySelector('h3')?.textContent === '세션 전체 종료') button.textContent = '세션 종료';
+      if (button.closest('.card')?.querySelector('h3')?.textContent === '결제 포털') button.textContent = '결제 관리';
+      if (button.closest('.card')?.querySelector('h3')?.textContent === '개인정보 요청') button.textContent = '요청 접수';
+    }, 1400);
+  });
+});

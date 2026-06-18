@@ -94,6 +94,7 @@ document.querySelector('#signupSubmit')?.addEventListener('click', () => {
   const pass = document.querySelector('#signupPass')?.value || '';
   const terms = document.querySelector('#agreeTerms')?.checked;
   const privacy = document.querySelector('#agreePrivacy')?.checked;
+  const agentNotice = document.querySelector('#agreeAgentNotice')?.checked;
 
   if (!email || !nickname || pass.length < 8) {
     signupMessage.textContent = '이메일, 표시 이름, 8자 이상 비밀번호를 입력하세요.';
@@ -101,8 +102,8 @@ document.querySelector('#signupSubmit')?.addEventListener('click', () => {
     return;
   }
 
-  if (!terms || !privacy) {
-    signupMessage.textContent = '필수 약관에 동의해야 가입할 수 있습니다.';
+  if (!terms || !privacy || !agentNotice) {
+    signupMessage.textContent = '필수 약관과 로컬 에이전트 고지를 확인해야 가입할 수 있습니다.';
     signupMessage.classList.add('error');
     return;
   }
