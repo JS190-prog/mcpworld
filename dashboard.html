@@ -1,0 +1,95 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP World Dashboard</title>
+  <meta name="description" content="MCP World 사용자 대시보드 데모">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="dashboard-page">
+  <header class="site-header">
+    <nav class="nav" aria-label="대시보드 메뉴">
+      <a class="brand" href="index.html" aria-label="MCP World 홈">
+        <span class="brand-mark">MW</span>
+        <span>MCP World</span>
+      </a>
+      <div class="nav-links">
+        <a href="#connectors">커넥터</a>
+        <a href="#agent">로컬 에이전트</a>
+        <a href="#billing">구독</a>
+        <a href="admin.html">관리자</a>
+      </div>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="admin.html">관리자</a>
+        <a class="btn btn-ghost" href="index.html">홈</a>
+        <button class="btn btn-secondary" id="signOutButton" type="button">로그아웃</button>
+      </div>
+    </nav>
+  </header>
+
+  <main>
+    <section class="section dashboard-hero">
+      <p class="eyebrow">Signed-in Dashboard</p>
+      <h1 id="welcomeTitle">MCP 연결을 시작하세요.</h1>
+      <p class="hero-text">프로그램별 커넥터 주소를 발급하고, Windows 로컬 에이전트 등록 상태를 확인하는 사용자용 화면입니다. 실제 서비스에서는 이 화면이 인증, 결제, 세션 API와 연결됩니다.</p>
+      <div class="cards three summary-cards">
+        <article class="card">
+          <span class="tag">Account</span>
+          <h3 id="accountName">데모 사용자</h3>
+          <p id="accountEmail">demo@mcpworld.local</p>
+        </article>
+        <article class="card">
+          <span class="tag">Plan</span>
+          <h3 id="planName">Pro Trial</h3>
+          <p>데모에서는 결제 없이 체험 플랜으로 표시합니다.</p>
+        </article>
+        <article class="card" id="agent">
+          <span class="tag">Local Agent</span>
+          <h3 id="agentStatusTitle">MCPWorld 등록 준비</h3>
+          <p id="agentStatusText">프로그램별 등록 버튼을 누르면 로컬 에이전트 페어링 흐름을 시뮬레이션합니다.</p>
+          <div class="agent-actions">
+            <a class="btn btn-secondary" href="#" id="installMcpworldButton">에이전트 설치</a>
+            <button class="btn btn-primary" id="autoBindButton" type="button">전체 등록</button>
+          </div>
+        </article>
+      </div>
+    </section>
+
+    <section id="connectors" class="section dashboard-section">
+      <div class="section-heading-row">
+        <div>
+          <p class="eyebrow">Program Connectors</p>
+          <h2>프로그램별 MCP 주소</h2>
+          <p>각 프로그램은 별도 세션 주소를 사용합니다. 등록된 프로그램만 ChatGPT에 붙여 넣을 주소를 복사할 수 있게 구성했습니다.</p>
+        </div>
+        <button class="btn btn-primary" id="refreshConnectors" type="button">주소 다시 발급</button>
+      </div>
+      <div class="connector-help">
+        <strong>자동 연결 구조</strong>
+        <span>mcpworld://pair 링크 호출 → 로컬 에이전트 실행 → 실행 파일 경로 저장 → SaaS 세션 라우터 매핑 → ChatGPT 커넥터 주소 복사</span>
+      </div>
+      <div class="connector-list large" id="connectorList" aria-label="프로그램별 커넥터 주소 목록"></div>
+    </section>
+
+    <section id="billing" class="section split">
+      <div>
+        <p class="eyebrow">Production Connections</p>
+        <h2>실서비스 전환 시 붙일 백엔드</h2>
+      </div>
+      <div class="cards three">
+        <article class="card"><h3>Auth</h3><p>Google OAuth, 이메일 가입, 세션 쿠키, 비밀번호 재설정을 연결합니다.</p></article>
+        <article class="card"><h3>Billing</h3><p>Hosted checkout, 구독 갱신, 플랜별 커넥터 권한 검증을 연결합니다.</p></article>
+        <article class="card"><h3>Tunnel</h3><p>사용자별 로컬 에이전트와 VPS의 relay/router를 연결합니다.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 MCP World SaaS Concept</span>
+    <span>User dashboard prototype</span>
+  </footer>
+
+  <script src="dashboard.js"></script>
+</body>
+</html>

@@ -1,0 +1,13 @@
+# Generated deployment bundles
+*.tar.gz
+*.zip
+
+# Local backup/output artifacts
+local_artifacts/
+
+# Scratch files
+write_test.txt
+
+# OS/editor noise
+.DS_Store
+Thumbs.db

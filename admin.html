@@ -1,0 +1,142 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP World Admin</title>
+  <meta name="description" content="MCP World SaaS 관리자 대시보드 데모">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body class="admin-page">
+  <header class="site-header">
+    <nav class="nav" aria-label="관리자 메뉴">
+      <a class="brand" href="index.html" aria-label="MCP World 홈">
+        <span class="brand-mark">MW</span>
+        <span>MCP World Admin</span>
+      </a>
+      <div class="nav-links">
+        <a href="#overview">개요</a>
+        <a href="#programs">프로그램</a>
+        <a href="#plans">요금제</a>
+        <a href="#events">이벤트</a>
+        <a href="#production">운영 전환</a>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost hidden" id="adminLockButton" type="button">잠금</button>
+        <a class="btn btn-ghost" href="dashboard.html">사용자 화면</a>
+        <a class="btn btn-secondary" href="index.html">홈</a>
+      </div>
+    </nav>
+  </header>
+
+  <section id="adminGate" class="section admin-gate">
+    <div class="admin-gate-card">
+      <p class="eyebrow">Admin Token</p>
+      <h1>관리자 토큰을 입력하세요.</h1>
+      <p>현재 화면은 정적 데모입니다. 운영 버전에서는 서버 API가 관리자 계정, 역할, MFA, IP 제한, 감사 로그를 검증해야 합니다.</p>
+      <div class="demo-credential">
+        <strong>데모 관리자 토큰</strong>
+        <span><code>mcpworld-admin-2026</code></span>
+      </div>
+      <label class="admin-token-label">관리자 토큰
+        <input id="adminTokenInput" type="password" placeholder="관리자 토큰 입력">
+      </label>
+      <p class="form-message" id="adminTokenMessage" role="status"></p>
+      <button class="btn btn-primary" id="adminTokenSubmit" type="button">관리자 대시보드 열기</button>
+    </div>
+  </section>
+
+  <main id="adminContent" class="hidden">
+    <section id="overview" class="section admin-hero">
+      <p class="eyebrow">Admin Analytics</p>
+      <h1>MCP 운영 현황</h1>
+      <p class="hero-text">가입자, 활성 PC, 프로그램 등록, 커넥터 발급, 오류 이벤트를 한 화면에서 보는 관리자용 데모입니다.</p>
+      <div class="admin-filter-bar">
+        <label>기간
+          <select id="rangeSelect">
+            <option value="today">오늘</option>
+            <option value="7d" selected>최근 7일</option>
+            <option value="30d">최근 30일</option>
+          </select>
+        </label>
+        <label>요금제
+          <select id="planSelect">
+            <option value="all" selected>전체</option>
+            <option value="free">Free</option>
+            <option value="starter">Starter</option>
+            <option value="pro">Pro</option>
+            <option value="studio">Studio</option>
+          </select>
+        </label>
+        <button class="btn btn-primary" id="refreshAdminData" type="button">통계 새로고침</button>
+      </div>
+      <div class="admin-kpi-grid" aria-label="MCP 운영 통계">
+        <article class="admin-kpi-card"><span>가입자</span><strong id="kpiUsers">0</strong><small>전체 계정</small></article>
+        <article class="admin-kpi-card"><span>활성 PC</span><strong id="kpiDevices">0</strong><small>에이전트 등록 장치</small></article>
+        <article class="admin-kpi-card"><span>활성 세션</span><strong id="kpiSessions">0</strong><small>현재 연결 중</small></article>
+        <article class="admin-kpi-card"><span>커넥터 발급</span><strong id="kpiConnectors">0</strong><small>프로그램별 주소</small></article>
+        <article class="admin-kpi-card"><span>오류율</span><strong id="kpiErrorRate">0%</strong><small>최근 요청 기준</small></article>
+        <article class="admin-kpi-card"><span>Relay 상태</span><strong id="kpiRelay">정상</strong><small>VPS tunnel relay</small></article>
+      </div>
+    </section>
+
+    <section id="programs" class="section dashboard-section">
+      <p class="eyebrow">Program Usage</p>
+      <h2>프로그램별 MCP 사용 현황</h2>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="programTable">
+          <thead>
+            <tr><th>프로그램</th><th>버전 기준</th><th>등록 PC</th><th>활성 세션</th><th>커넥터 발급</th><th>오류</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="plans" class="section split">
+      <div>
+        <p class="eyebrow">Plan Distribution</p>
+        <h2>요금제별 사용자 분포</h2>
+        <p>초기 판매 전략을 점검하기 위한 데모 데이터입니다.</p>
+      </div>
+      <div class="plan-bars" id="planBars"></div>
+    </section>
+
+    <section id="events" class="section dashboard-section">
+      <div class="section-heading-row">
+        <div>
+          <p class="eyebrow">Recent Events</p>
+          <h2>최근 MCP 이벤트</h2>
+          <p>pair, connector issue, session start, error, disconnect 이벤트를 최신순으로 표시합니다.</p>
+        </div>
+        <button class="btn btn-secondary" id="exportEvents" type="button">CSV 내보내기 데모</button>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table" id="eventTable">
+          <thead>
+            <tr><th>시간</th><th>사용자</th><th>프로그램</th><th>이벤트</th><th>상태</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+    </section>
+
+    <section id="production" class="section">
+      <p class="eyebrow">Production Readiness</p>
+      <h2>운영 버전에서 반드시 붙일 보안 장치</h2>
+      <div class="cards three">
+        <article class="card"><span class="tag">Server Auth</span><h3>서버 검증</h3><p>관리자 화면의 모든 API 요청은 서버에서 세션, 역할, MFA 상태를 검증해야 합니다.</p></article>
+        <article class="card"><span class="tag">Audit</span><h3>감사 로그</h3><p>사용자 조회, 세션 종료, CSV 내보내기 같은 운영자 행동을 모두 기록합니다.</p></article>
+        <article class="card"><span class="tag">Masking</span><h3>민감정보 최소화</h3><p>이메일, 세션 키, 로컬 경로는 필요한 범위만 표시하고 원문 노출을 줄입니다.</p></article>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 MCP World SaaS Concept</span>
+    <span>Admin prototype</span>
+  </footer>
+
+  <script src="admin.js"></script>
+</body>
+</html>
