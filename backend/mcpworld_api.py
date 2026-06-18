@@ -18,6 +18,18 @@ PORT = int(os.environ.get("MCPWORLD_PORT", "33210"))
 TOKEN_TTL_SECONDS = int(os.environ.get("MCPWORLD_SESSION_TTL_SECONDS", "3600"))
 
 
+TOOL_CATALOG = [
+    {"id": "system.ping", "category": "system", "label": "Agent ping", "description": "Verify MCPWorld Agent can receive and answer tool calls.", "requiresLocalApp": False},
+    {"id": "word.status", "category": "office", "label": "Word status", "description": "Check whether Word automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "powerpoint.status", "category": "office", "label": "PowerPoint status", "description": "Check whether PowerPoint automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "excel.status", "category": "office", "label": "Excel status", "description": "Check whether Excel automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "cad.status", "category": "cad", "label": "CAD status", "description": "Check whether AutoCAD/GstarCAD/ZWCAD automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "hwp.status", "category": "document", "label": "HWP status", "description": "Check whether Hancom HWP automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "photoshop.status", "category": "creative", "label": "Photoshop status", "description": "Check whether Photoshop automation is available on the user's PC.", "requiresLocalApp": True},
+    {"id": "blender.status", "category": "creative", "label": "Blender status", "description": "Check whether Blender automation is available on the user's PC.", "requiresLocalApp": True},
+]
+
+
 def now() -> int:
     return int(time.time())
 
@@ -94,6 +106,19 @@ def init_db():
               event_id text,
               status text not null,
               payload text not null
+            );
+            create table if not exists tool_calls (
+              id text primary key,
+              session_id text not null,
+              user_id text not null,
+              tool_name text not null,
+              arguments_json text not null,
+              status text not null default 'queued',
+              result_json text,
+              error text,
+              agent_id text,
+              created_at integer not null,
+              updated_at integer not null
             );
             """
         )
@@ -188,6 +213,8 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_GET(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path.startswith("/api/"):
+            path = path[4:]
         query = urllib.parse.parse_qs(parsed.query)
         try:
             if path == "/health":
@@ -200,6 +227,11 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.google_callback(query)
             if path == "/admin/bootstrap":
                 return self.admin_bootstrap()
+            if path == "/tools/catalog":
+                return json_response(self, 200, {"ok": True, "tools": TOOL_CATALOG})
+            if path.startswith("/tool-calls/"):
+                call_id = path.split("/")[2]
+                return self.get_tool_call(call_id)
             if path.startswith("/relay/u/"):
                 return self.relay_status(path, query)
             return json_response(self, 404, {"ok": False, "error": "not_found"})
@@ -209,6 +241,8 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        if path.startswith("/api/"):
+            path = path[4:]
         try:
             if path == "/auth/signup":
                 return self.signup()
@@ -225,6 +259,12 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.terminate_session(session_id)
             if path == "/agent/register":
                 return self.register_agent()
+            if path == "/agent/poll":
+                return self.agent_poll()
+            if path == "/agent/result":
+                return self.agent_result()
+            if path == "/tool-calls/enqueue":
+                return self.enqueue_tool_call()
             if path == "/admin/action":
                 return self.admin_action()
             return json_response(self, 404, {"ok": False, "error": "not_found"})
@@ -411,6 +451,91 @@ class ApiHandler(BaseHTTPRequestHandler):
             log_event(db, email, "agent.register", agent_id, "success", f"{device} registered")
         return json_response(self, 200, {"ok": True, "agentId": agent_id, "status": "online"})
 
+
+    def enqueue_tool_call(self):
+        body = read_body(self)
+        session_id = body.get("sessionId") or ""
+        tool_name = body.get("toolName") or ""
+        arguments = body.get("arguments") or {}
+        if tool_name not in {tool["id"] for tool in TOOL_CATALOG}:
+            return json_response(self, 400, {"ok": False, "error": "unknown_tool"})
+        with get_db() as db:
+            session = db.execute("select * from sessions where id = ?", (session_id,)).fetchone()
+            if not session or session["status"] != "active" or session["expires_at"] < now():
+                return json_response(self, 404, {"ok": False, "error": "active_session_not_found"})
+            call_id = "call-" + secrets.token_hex(6)
+            db.execute(
+                """
+                insert into tool_calls (id, session_id, user_id, tool_name, arguments_json, status, created_at, updated_at)
+                values (?, ?, ?, ?, ?, 'queued', ?, ?)
+                """,
+                (call_id, session_id, session["user_id"], tool_name, json.dumps(arguments, ensure_ascii=False), now(), now()),
+            )
+            log_event(db, "relay", "tool.enqueue", call_id, "success", f"{tool_name} queued for agent")
+        return json_response(self, 200, {"ok": True, "callId": call_id, "status": "queued"})
+
+    def get_tool_call(self, call_id):
+        with get_db() as db:
+            row = db.execute("select * from tool_calls where id = ?", (call_id,)).fetchone()
+            if not row:
+                return json_response(self, 404, {"ok": False, "error": "call_not_found"})
+        return json_response(
+            self,
+            200,
+            {
+                "ok": True,
+                "call": {
+                    "id": row["id"],
+                    "sessionId": row["session_id"],
+                    "toolName": row["tool_name"],
+                    "arguments": json.loads(row["arguments_json"]),
+                    "status": row["status"],
+                    "result": json.loads(row["result_json"]) if row["result_json"] else None,
+                    "error": row["error"],
+                },
+            },
+        )
+
+    def agent_poll(self):
+        body = read_body(self)
+        agent_id = body.get("agentId") or ""
+        email = (body.get("email") or "").strip().lower()
+        with get_db() as db:
+            user = db.execute("select * from users where email = ?", (email,)).fetchone()
+            if not user:
+                return json_response(self, 404, {"ok": False, "error": "user_not_found"})
+            db.execute("update agents set status = 'online', last_seen_at = ? where id = ? and user_id = ?", (now(), agent_id, user["id"]))
+            row = db.execute(
+                """
+                select * from tool_calls
+                where user_id = ? and status = 'queued'
+                order by created_at asc
+                limit 1
+                """,
+                (user["id"],),
+            ).fetchone()
+            if not row:
+                return json_response(self, 200, {"ok": True, "call": None})
+            db.execute("update tool_calls set status = 'running', agent_id = ?, updated_at = ? where id = ?", (agent_id, now(), row["id"]))
+            log_event(db, email, "tool.dispatch", row["id"], "success", f"{row['tool_name']} dispatched to agent")
+        return json_response(self, 200, {"ok": True, "call": {"id": row["id"], "sessionId": row["session_id"], "toolName": row["tool_name"], "arguments": json.loads(row["arguments_json"])}})
+
+    def agent_result(self):
+        body = read_body(self)
+        call_id = body.get("callId") or ""
+        status = body.get("status") or "done"
+        result = body.get("result")
+        error = body.get("error")
+        if status not in {"done", "error"}:
+            return json_response(self, 400, {"ok": False, "error": "bad_status"})
+        with get_db() as db:
+            db.execute(
+                "update tool_calls set status = ?, result_json = ?, error = ?, updated_at = ? where id = ?",
+                (status, json.dumps(result, ensure_ascii=False) if result is not None else None, error, now(), call_id),
+            )
+            log_event(db, "agent", "tool.result", call_id, "success" if status == "done" else "error", status)
+        return json_response(self, 200, {"ok": True, "callId": call_id, "status": status})
+
     def relay_status(self, path, query):
         parts = path.strip("/").split("/")
         tool = parts[4] if len(parts) >= 5 else "unknown"
@@ -432,7 +557,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "tool": tool,
                 "sessionId": session_id,
                 "status": "waiting_agent",
-                "message": "Local agent endpoint is registered through /api/agent/register. Full MCP streaming transport is the next integration step.",
+                "message": "Session is valid. Tool calls should be enqueued through /api/tool-calls/enqueue and delivered to MCPWorld Agent through /api/agent/poll.",
             },
         )
 
