@@ -41,6 +41,7 @@ sudo systemctl reload nginx
 ## Demo Credentials
 
 - User login: `demo` / `demo1234`
+- Admin console: `/mcpworld/admin/`
 - Admin token: `mcpworld-admin-2026`
 
 ## Production TODO
