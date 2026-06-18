@@ -83,6 +83,24 @@ let logs = [
   { time: '09:28', type: 'admin', target: 'operator', message: 'operator console opened', status: 'success' }
 ];
 
+async function getApi(path) {
+  const response = await fetch(`../api${path}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
+  return data;
+}
+
+async function postApi(path, payload) {
+  const response = await fetch(`../api${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
+  return data;
+}
+
 function getDemoAdminCode() {
   return ['mcpworld', 'admin', '2026'].join('-');
 }
@@ -270,6 +288,46 @@ function renderAll() {
   renderActionFeed();
 }
 
+async function hydrateFromApi() {
+  try {
+    const data = await getApi('/admin/bootstrap');
+    if (Array.isArray(data.users) && data.users.length) {
+      users.splice(0, users.length, ...data.users.map((user) => ({
+        id: user.id,
+        name: user.displayName,
+        email: user.email,
+        plan: user.plan,
+        status: user.status,
+        lastSeen: user.lastSeenAt ? new Date(user.lastSeenAt * 1000).toLocaleString('ko-KR') : '-',
+        risk: user.risk,
+        sessions: 0
+      })));
+    }
+    if (Array.isArray(data.sessions)) {
+      sessions.splice(0, sessions.length, ...data.sessions.map((session) => ({
+        id: session.id,
+        user: session.user_id,
+        tool: session.tool,
+        status: session.status,
+        relay: session.relay_status,
+        expires: session.expires_at ? new Date(session.expires_at * 1000).toLocaleTimeString('ko-KR') : '-',
+        risk: session.status === 'active' ? 'normal' : 'warning'
+      })));
+    }
+    if (Array.isArray(data.logs)) {
+      logs = data.logs.map((row) => ({
+        time: new Date(row.at * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
+        type: row.event_type,
+        target: row.target,
+        message: row.message,
+        status: row.status
+      }));
+    }
+  } catch {
+    addAction('API 연결 실패. 정적 데모 데이터로 표시합니다.', 'warning');
+  }
+}
+
 function unlockAdmin() {
   sessionStorage.setItem(ADMIN_AUTH_KEY, 'true');
   adminGate?.classList.add('hidden');
@@ -329,6 +387,8 @@ document.addEventListener('click', (event) => {
     'export-audit': '감사 로그 CSV 생성 작업을 시작했습니다.'
   };
 
+  postApi('/admin/action', { action, target: user || session || issue || owner || 'system' }).catch(() => {});
+
   if (action === 'open-user' && userSearchInput) {
     userSearchInput.value = owner;
     renderUsers();
@@ -338,8 +398,10 @@ document.addEventListener('click', (event) => {
 
 adminLockButton?.addEventListener('click', lockAdmin);
 refreshAdminData?.addEventListener('click', () => {
-  renderAll();
-  addAction('운영 데이터를 새로고침했습니다.');
+  hydrateFromApi().finally(() => {
+    renderAll();
+    addAction('운영 데이터를 새로고침했습니다.');
+  });
 });
 runTriageButton?.addEventListener('click', () => {
   riskSelect.value = 'critical';
@@ -358,5 +420,8 @@ planSelect?.addEventListener('change', () => {
 riskSelect?.addEventListener('change', renderAll);
 userSearchInput?.addEventListener('input', renderUsers);
 
-if (sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true') unlockAdmin();
-else lockAdmin();
+if (sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
+  hydrateFromApi().finally(unlockAdmin);
+} else {
+  lockAdmin();
+}

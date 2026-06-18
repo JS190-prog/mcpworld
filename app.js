@@ -16,6 +16,32 @@ const demoAccount = {
   plan: 'Pro Trial'
 };
 
+async function postApi(path, payload) {
+  const response = await fetch(`api${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    const error = new Error(data.error || 'api_error');
+    error.data = data;
+    throw error;
+  }
+  return data;
+}
+
+async function getApi(path) {
+  const response = await fetch(`api${path}`);
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) {
+    const error = new Error(data.error || 'api_error');
+    error.data = data;
+    throw error;
+  }
+  return data;
+}
+
 if (navToggle && navLinks) {
   navToggle.addEventListener('click', () => {
     const isOpen = navLinks.classList.toggle('open');
@@ -59,7 +85,15 @@ document.querySelectorAll('.open-signup').forEach((button) => {
 });
 
 document.querySelectorAll('.open-checkout').forEach((button) => {
-  button.addEventListener('click', () => openDialog(checkoutDialog));
+  button.addEventListener('click', async () => {
+    try {
+      const plan = button.closest('.price-card')?.querySelector('h3')?.textContent || 'Pro';
+      const data = await postApi('/billing/checkout', { plan });
+      if (data.checkoutUrl) window.location.href = data.checkoutUrl;
+    } catch {
+      openDialog(checkoutDialog);
+    }
+  });
 });
 
 document.querySelectorAll('.modal-close').forEach((button) => {
@@ -77,15 +111,26 @@ document.querySelector('#loginSubmit')?.addEventListener('click', () => {
   const pass = loginPass?.value || '';
   const isDemoUser = user === demoAccount.id || user === demoAccount.email;
 
-  if (isDemoUser && pass === demoAccount.pass) {
-    loginMessage.textContent = '로그인되었습니다. 대시보드로 이동합니다.';
-    loginMessage.classList.remove('error');
-    goToDashboard(demoAccount);
-    return;
-  }
-
-  loginMessage.textContent = '데모 계정은 아이디 demo, 비밀번호 demo1234 입니다.';
-  loginMessage.classList.add('error');
+  postApi('/auth/login', { identifier: user, password: pass })
+    .then((data) => {
+      loginMessage.textContent = '로그인되었습니다. 대시보드로 이동합니다.';
+      loginMessage.classList.remove('error');
+      goToDashboard({
+        nickname: data.user.displayName,
+        email: data.user.email,
+        plan: data.user.plan
+      });
+    })
+    .catch(() => {
+      if (isDemoUser && pass === demoAccount.pass) {
+        loginMessage.textContent = '로컬 데모 로그인으로 이동합니다.';
+        loginMessage.classList.remove('error');
+        goToDashboard(demoAccount);
+        return;
+      }
+      loginMessage.textContent = '로그인에 실패했습니다. 데모 계정은 demo / demo1234 입니다.';
+      loginMessage.classList.add('error');
+    });
 });
 
 document.querySelector('#signupSubmit')?.addEventListener('click', () => {
@@ -108,7 +153,24 @@ document.querySelector('#signupSubmit')?.addEventListener('click', () => {
     return;
   }
 
-  signupMessage.textContent = '가입되었습니다. 대시보드로 이동합니다.';
-  signupMessage.classList.remove('error');
-  goToDashboard({ nickname, email, plan: 'Free Trial' });
+  postApi('/auth/signup', { email, displayName: nickname, password: pass })
+    .then((data) => {
+      signupMessage.textContent = '가입되었습니다. 대시보드로 이동합니다.';
+      signupMessage.classList.remove('error');
+      goToDashboard({ nickname: data.user.displayName, email: data.user.email, plan: data.user.plan });
+    })
+    .catch((error) => {
+      signupMessage.textContent = error.data?.error === 'email_exists' ? '이미 가입된 이메일입니다.' : '가입 API 연결에 실패했습니다.';
+      signupMessage.classList.add('error');
+    });
+});
+
+document.querySelector('#googleSignupButton')?.addEventListener('click', async () => {
+  try {
+    const data = await getApi('/auth/google/url');
+    if (data.url) window.location.href = data.url;
+  } catch (error) {
+    signupMessage.textContent = 'Google OAuth 설정이 필요합니다. 서버에 GOOGLE_CLIENT_ID를 설정하세요.';
+    signupMessage.classList.add('error');
+  }
 });

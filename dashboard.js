@@ -29,6 +29,17 @@ const fallbackUser = {
 const registeredTools = new Set();
 let currentSessionId = '';
 
+async function postApi(path, payload) {
+  const response = await fetch(`api${path}`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify(payload)
+  });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
+  return data;
+}
+
 function getAppBaseUrl() {
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const appRoot = pathParts[0] === 'mcpworld' ? '/mcpworld' : '';
@@ -53,6 +64,15 @@ function makeSessionId() {
 function buildConnectorUrl(user, toolSlug, sessionId) {
   const userKey = encodeURIComponent((user.email || 'demo').split('@')[0].toLowerCase());
   return `${getAppBaseUrl()}/relay/u/${userKey}/mcp/${toolSlug}?session=${sessionId}`;
+}
+
+async function issueConnector(user, toolSlug) {
+  try {
+    const data = await postApi('/sessions/issue', { email: user.email, tool: toolSlug });
+    return data.session.route;
+  } catch {
+    return buildConnectorUrl(user, toolSlug, currentSessionId);
+  }
 }
 
 function buildPairUrl(user, tool, sessionId) {
@@ -95,7 +115,7 @@ function renderConnectors(user, options = {}) {
 
   connectorTools.forEach((tool) => {
     const isRegistered = registeredTools.has(tool.slug);
-    const connectorUrl = buildConnectorUrl(user, tool.slug, currentSessionId);
+    let connectorUrl = buildConnectorUrl(user, tool.slug, currentSessionId);
     const pairUrl = buildPairUrl(user, tool, currentSessionId);
     const row = document.createElement('div');
     row.className = isRegistered ? 'connector-row is-bound' : 'connector-row is-waiting';
@@ -137,6 +157,7 @@ function renderConnectors(user, options = {}) {
     copyButton.disabled = !isRegistered;
     copyButton.addEventListener('click', async () => {
       try {
+        connectorUrl = await issueConnector(user, tool.slug);
         await navigator.clipboard.writeText(connectorUrl);
         copyButton.textContent = '복사 완료';
       } catch {
@@ -159,8 +180,10 @@ setAgentState();
 renderConnectors(currentUser, { refreshSession: true });
 
 installMcpworldButton?.addEventListener('click', (event) => {
-  event.preventDefault();
-  alert('데모입니다. 운영 버전에서는 Windows 설치 파일 다운로드로 연결하세요.');
+  installMcpworldButton.textContent = '다운로드 시작';
+  setTimeout(() => {
+    installMcpworldButton.textContent = '에이전트 설치';
+  }, 1400);
 });
 
 autoBindButton?.addEventListener('click', () => {
@@ -186,6 +209,10 @@ signOutButton?.addEventListener('click', () => {
 document.querySelectorAll('.dashboard-action').forEach((button) => {
   button.addEventListener('click', () => {
     button.textContent = '운영 API 연결 예정';
+    const title = button.closest('.card')?.querySelector('h3')?.textContent;
+    if (title === '세션 전체 종료') {
+      postApi('/admin/action', { action: 'terminate-user-sessions', target: currentUser.email }).catch(() => {});
+    }
     setTimeout(() => {
       if (button.closest('.card')?.querySelector('h3')?.textContent === '세션 전체 종료') button.textContent = '세션 종료';
       if (button.closest('.card')?.querySelector('h3')?.textContent === '결제 포털') button.textContent = '결제 관리';

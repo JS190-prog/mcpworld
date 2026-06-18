@@ -28,6 +28,26 @@ server {
     index index.html;
     try_files $uri $uri/ /mcpworld/index.html;
   }
+
+  location ^~ /mcpworld/api/ {
+    proxy_pass http://127.0.0.1:33210/;
+    proxy_http_version 1.1;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
+  location ^~ /mcpworld/relay/ {
+    proxy_pass http://127.0.0.1:33210/relay/;
+    proxy_http_version 1.1;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
 }
 ```
 
@@ -36,6 +56,27 @@ Then reload Nginx:
 ```bash
 sudo nginx -t
 sudo systemctl reload nginx
+```
+
+## API Service
+
+```bash
+sudo mkdir -p /var/lib/mcpworld
+sudo chown -R www-data:www-data /var/lib/mcpworld
+sudo cp deploy/mcpworld-api.service /etc/systemd/system/mcpworld-api.service
+sudo systemctl daemon-reload
+sudo systemctl enable --now mcpworld-api
+```
+
+Optional production environment variables:
+
+```text
+GOOGLE_CLIENT_ID
+GOOGLE_CLIENT_SECRET
+GOOGLE_REDIRECT_URI
+BILLING_PROVIDER
+BILLING_CHECKOUT_URL
+BILLING_WEBHOOK_SECRET
 ```
 
 ## Demo Credentials

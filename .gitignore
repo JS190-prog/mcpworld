@@ -1,6 +1,7 @@
 # Generated deployment bundles
 *.tar.gz
 *.zip
+!agent/*.zip
 
 # Local backup/output artifacts
 local_artifacts/

@@ -1,0 +1,19 @@
+[Unit]
+Description=MCP World API
+After=network.target
+
+[Service]
+Type=simple
+User=www-data
+Group=www-data
+Environment=MCPWORLD_HOST=127.0.0.1
+Environment=MCPWORLD_PORT=33210
+Environment=MCPWORLD_PUBLIC_URL=https://www.tornado616.cloud/mcpworld
+Environment=MCPWORLD_DB=/var/lib/mcpworld/mcpworld.sqlite3
+WorkingDirectory=/var/www/mcpworld/backend
+ExecStart=/usr/bin/python3 /var/www/mcpworld/backend/mcpworld_api.py
+Restart=always
+RestartSec=3
+
+[Install]
+WantedBy=multi-user.target
