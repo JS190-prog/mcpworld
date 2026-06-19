@@ -27,7 +27,7 @@ The VPS should serve only the site, API, dashboard, admin console, and a small m
 
 ## Beta 1 acceptance checklist
 
-- [ ] GitHub repository URL replaces `OWNER/REPO` in `site-config.js`.
+- [ ] GitHub repository URL is set to `JS190-prog/mcpworld` in `site-config.js`.
 - [ ] GitHub Releases has a `v0.2.0-beta.1` release.
 - [ ] Release includes ZIP, EXE if available, MSI if available, and checksums.
 - [ ] Main site download link opens GitHub Releases latest page.
