@@ -28,7 +28,7 @@ Status adapters only check local app availability. Deeper file or UI automation 
 
 Use GitHub Releases:
 
-- Latest release: https://github.com/JS190-prog/mcpworld/releases/latest
+- Latest release: https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1
 - Issues: https://github.com/JS190-prog/mcpworld/issues
 - Discussions: https://github.com/JS190-prog/mcpworld/discussions
 

@@ -5,7 +5,7 @@
 The planned public repository is `JS190-prog/mcpworld`.
 
 - Repository: `https://github.com/JS190-prog/mcpworld`
-- Latest release: `https://github.com/JS190-prog/mcpworld/releases/latest`
+- Latest release: `https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1`
 - Issues: `https://github.com/JS190-prog/mcpworld/issues`
 - Discussions: `https://github.com/JS190-prog/mcpworld/discussions`
 
@@ -43,7 +43,7 @@ Update `site-config.js` once the repo exists:
 
 ```js
 githubRepo: 'https://github.com/JS190-prog/mcpworld',
-githubReleases: 'https://github.com/JS190-prog/mcpworld/releases/latest',
+githubReleases: 'https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1',
 githubIssues: 'https://github.com/JS190-prog/mcpworld/issues',
 githubDiscussions: 'https://github.com/JS190-prog/mcpworld/discussions'
 ```
