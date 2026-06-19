@@ -1,41 +1,19 @@
-# Python
-__pycache__/
-*.py[cod]
-.pytest_cache/
+# Generated deployment bundles
+*.tar.gz
+*.zip
+!agent/*.zip
 
-# local runtime
-.venv/
-.proxy-venv/
-venv/
-
-# Runtime logs & backups
-logs/
+# Local backup/output artifacts
 local_artifacts/
-*.log
-*.bak
-*.bak-*
-*.bak_*
 
-# ──────────────────────────────────────────────────────────────────────
-# 개인정보 / 인프라 비밀 — 절대 GitHub(공개)로 올리지 말 것.
-# 공개 레포(JS190-prog/mcpworld)에는 config.json 대신 config.example.json
-# (YOUR_VPS_IP / YOUR_DOMAIN 플레이스홀더 버전)만 올린다.
-# ──────────────────────────────────────────────────────────────────────
-# 실제 VPS SSH 대상 + public_base 도메인 포함
-config.json
-# VPS nginx 설정(server_name·내부 포트 매핑 등). 명시 항목 + 일반 패턴.
-automaton-dashboard-http.conf.remote
-*.conf.remote
-# 일반 비밀 파일
-*.secret
-*.key
-*.pem
-.env
-.env.*
+# Scratch files
+write_test.txt
 
-# Third-party sub-project (manages its own git history)
-hwp-mcp/
-
-# OS / editor cruft
-Thumbs.db
+# OS/editor noise
 .DS_Store
+Thumbs.db
+
+# Python cache
+__pycache__/
+*.pyc
+__write_test.tmp
