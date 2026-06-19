@@ -1,0 +1,27 @@
+﻿{
+    "channel":  "beta",
+    "version":  "0.2.0-beta.1",
+    "minimumAgentVersion":  "0.2.0-beta.1",
+    "releasePage":  "https://github.com/OWNER/REPO/releases/tag/v0.2.0-beta.1",
+    "notes":  "MCPWorld Agent release manifest. Large binaries are hosted on GitHub Releases.",
+    "assets":  {
+                   "exe":  {
+                               "fileName":  "MCPWorld-Agent-Setup.exe",
+                               "url":  "https://github.com/OWNER/REPO/releases/download/v0.2.0-beta.1/MCPWorld-Agent-Setup.exe",
+                               "sha256":  "TBD_BUILD_ARTIFACT",
+                               "recommendedFor":  "general Windows users"
+                           },
+                   "msi":  {
+                               "fileName":  "MCPWorld-Agent-Setup.msi",
+                               "url":  "https://github.com/OWNER/REPO/releases/download/v0.2.0-beta.1/MCPWorld-Agent-Setup.msi",
+                               "sha256":  "TBD_BUILD_ARTIFACT",
+                               "recommendedFor":  "managed enterprise deployment"
+                           },
+                   "zip":  {
+                               "fileName":  "mcpworld-agent.zip",
+                               "url":  "https://github.com/OWNER/REPO/releases/download/v0.2.0-beta.1/mcpworld-agent.zip",
+                               "sha256":  "24838af0599b9ec87a23eba7b839e2e28af2c4017302f3457b637d62d5cbe5ea",
+                               "recommendedFor":  "manual install and recovery"
+                           }
+               }
+}

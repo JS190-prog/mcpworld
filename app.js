@@ -8,6 +8,27 @@ const loginPass = document.querySelector('#loginPass');
 const loginMessage = document.querySelector('#loginMessage');
 const signupMessage = document.querySelector('#signupMessage');
 
+
+function applyExternalLinks() {
+  const links = window.MCPWORLD_LINKS || {};
+  const mappings = [
+    ['.github-repo-link', links.githubRepo],
+    ['.github-release-link', links.githubReleases],
+    ['.github-issues-link', links.githubIssues],
+    ['.github-discussions-link', links.githubDiscussions]
+  ];
+  mappings.forEach(([selector, href]) => {
+    if (!href) return;
+    document.querySelectorAll(selector).forEach((anchor) => {
+      anchor.href = href;
+      anchor.target = '_blank';
+      anchor.rel = 'noopener';
+    });
+  });
+}
+
+applyExternalLinks();
+
 const demoAccount = {
   id: 'demo',
   email: 'demo@mcpworld.local',

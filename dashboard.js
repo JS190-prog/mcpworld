@@ -10,6 +10,20 @@ const installMcpworldButton = document.querySelector('#installMcpworldButton');
 const agentStatusTitle = document.querySelector('#agentStatusTitle');
 const agentStatusText = document.querySelector('#agentStatusText');
 
+function getAgentDownloadUrl() {
+  return window.MCPWORLD_LINKS?.githubReleases || 'release/latest.json';
+}
+
+function configureAgentDownloadLink() {
+  if (!installMcpworldButton) return;
+  installMcpworldButton.href = getAgentDownloadUrl();
+  installMcpworldButton.target = '_blank';
+  installMcpworldButton.rel = 'noopener';
+}
+
+configureAgentDownloadLink();
+
+
 const connectorTools = [
   { label: 'Word', versionName: 'Microsoft Word / Microsoft 365', slug: 'word', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE' },
   { label: 'PowerPoint', versionName: 'Microsoft PowerPoint / Microsoft 365', slug: 'powerpoint', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE' },
