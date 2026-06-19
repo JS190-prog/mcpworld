@@ -75,9 +75,14 @@ function makeSessionId() {
   return `${randomPart}${timePart}`;
 }
 
+function getMcpProxyBase() {
+  return (window.MCPWORLD_LINKS?.mcpProxyBase || '').replace(/\/$/, '');
+}
+
 function buildConnectorUrl(user, toolSlug, sessionId) {
-  const userKey = encodeURIComponent((user.email || 'demo').split('@')[0].toLowerCase());
-  return `${getAppBaseUrl()}/relay/u/${userKey}/mcp/${toolSlug}?session=${sessionId}`;
+  const proxyBase = getMcpProxyBase();
+  if (proxyBase) return `${proxyBase}/${encodeURIComponent(sessionId)}/mcp`;
+  return `${getAppBaseUrl()}/mcp?key=${encodeURIComponent(sessionId)}`;
 }
 
 async function issueConnector(user, toolSlug) {

@@ -1,6 +1,6 @@
 # MCPWorld single-agent relay architecture
 
-MCPWorld lets a user install only the MCPWorld Agent, then connect MCP tool links from MCPWorld without installing one MCP server per app inside ChatGPT.
+MCPWorld lets a user install only the MCPWorld Agent, then connect MCP tool links from MCPWorld without installing one MCP server per app inside ChatGPT. Public links can be issued through a Cloudflare Worker proxy such as `https://mcpworld-proxy.YOUR_SUBDOMAIN.workers.dev/mcpworld/{key}/mcp` so the direct VPS route is not exposed.
 
 The target local app and its local MCP server still need to exist on the user's PC. The difference is that ChatGPT connects to MCPWorld, and MCPWorld routes approved calls through the installed agent to the already-configured local MCP programs.
 
@@ -30,6 +30,8 @@ sequenceDiagram
 ### VPS/API
 
 - `GET /api/tools/catalog` returns the VPS-owned catalog.
+- `POST /mcp?key=...` is the short MCP endpoint used by the Worker proxy.
+- `MCPWORLD_PROXY_PUBLIC_BASE` makes issued dashboard links use the Worker URL shape instead of direct VPS URLs.
 - `POST /api/sessions/issue` creates a connector session for one program slug such as `powerpoint`, `cad`, or `hwp`.
 - `POST /api/tool-calls/enqueue` queues only tools allowed for that session.
 - `GET /api/tool-calls/{call_id}` reads call status and result.

@@ -1,0 +1,6 @@
+name = "mcpworld-proxy"
+main = "src/index.js"
+compatibility_date = "2026-06-19"
+
+[vars]
+MCPWORLD_UPSTREAM_ORIGIN = "https://www.tornado616.cloud"

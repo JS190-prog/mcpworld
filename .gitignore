@@ -20,3 +20,6 @@ __write_test.tmp
 
 # Build outputs
 dist/
+
+# Test scratch
+.test-tmp/
