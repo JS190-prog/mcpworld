@@ -3,7 +3,7 @@
   "version": "0.2.0-beta.1",
   "minimumAgentVersion": "0.2.0-beta.1",
   "releasePage": "https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1",
-  "notes": "MCPWorld Agent release manifest. Large binaries are hosted on GitHub Releases.",
+  "notes": "MCPWorld Agent release manifest. Public assets are installer-only for beta users.",
   "assets": {
     "exe": {
       "fileName": "MCPWorld-Agent-Setup.exe",
@@ -16,12 +16,6 @@
       "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.1/MCPWorld-Agent-Setup.msi",
       "sha256": "f77cc5b8d22630f2fedb3c918c974ec563b03c6d54cead1b5244d369d078aed3",
       "recommendedFor": "managed enterprise deployment"
-    },
-    "zip": {
-      "fileName": "mcpworld-agent.zip",
-      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.1/mcpworld-agent.zip",
-      "sha256": "87bc6e87e8f80dd9f2e21c383cca78198cf7d678bfb075a95fe2ed64ccc5fd3b",
-      "recommendedFor": "manual install and recovery"
     }
   }
 }

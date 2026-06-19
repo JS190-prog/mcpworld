@@ -22,7 +22,6 @@ Recommended files:
 
 - `MCPWorld-Agent-Setup.exe`: normal Windows beta install path.
 - `MCPWorld-Agent-Setup.msi`: managed or enterprise install path.
-- `mcpworld-agent.zip`: manual recovery or smoke-test package.
 - `SHA256SUMS.txt`: checksum verification.
 
 The installers are beta builds and may show a Windows SmartScreen warning because code signing is not configured yet.

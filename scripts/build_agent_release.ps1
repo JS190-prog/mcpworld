@@ -86,12 +86,12 @@ if (!$SkipInstallerTools) {
 }
 
 $ShaPath = Join-Path $DistDir "SHA256SUMS.txt"
-Get-ChildItem -LiteralPath $DistDir -File | Where-Object { $_.Name -match '\.(zip|exe|msi)$' } | ForEach-Object {
-  $Hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $_.FullName).Hash.ToLowerInvariant()
-  "$Hash  $($_.Name)"
+@($SetupExe, $SetupMsi) | Where-Object { Test-Path -LiteralPath $_ } | ForEach-Object {
+  $Item = Get-Item -LiteralPath $_
+  $Hash = (Get-FileHash -Algorithm SHA256 -LiteralPath $Item.FullName).Hash.ToLowerInvariant()
+  "$Hash  $($Item.Name)"
 } | Set-Content -LiteralPath $ShaPath -Encoding UTF8
 
-$ZipSha = (Get-FileHash -Algorithm SHA256 -LiteralPath $AgentZip).Hash.ToLowerInvariant()
 $ExeSha = if (Test-Path -LiteralPath $SetupExe) { (Get-FileHash -Algorithm SHA256 -LiteralPath $SetupExe).Hash.ToLowerInvariant() } else { "TBD_BUILD_ARTIFACT" }
 $MsiSha = if (Test-Path -LiteralPath $SetupMsi) { (Get-FileHash -Algorithm SHA256 -LiteralPath $SetupMsi).Hash.ToLowerInvariant() } else { "TBD_BUILD_ARTIFACT" }
 $Manifest = [ordered]@{
@@ -99,7 +99,7 @@ $Manifest = [ordered]@{
   version = $Version
   minimumAgentVersion = $Version
   releasePage = "https://github.com/$GitHubRepo/releases/tag/v$Version"
-  notes = "MCPWorld Agent release manifest. Large binaries are hosted on GitHub Releases."
+  notes = "MCPWorld Agent release manifest. Public assets are installer-only for beta users."
   assets = [ordered]@{
     exe = [ordered]@{
       fileName = "MCPWorld-Agent-Setup.exe"
@@ -112,12 +112,6 @@ $Manifest = [ordered]@{
       url = "https://github.com/$GitHubRepo/releases/download/v$Version/MCPWorld-Agent-Setup.msi"
       sha256 = $MsiSha
       recommendedFor = "managed enterprise deployment"
-    }
-    zip = [ordered]@{
-      fileName = "mcpworld-agent.zip"
-      url = "https://github.com/$GitHubRepo/releases/download/v$Version/mcpworld-agent.zip"
-      sha256 = $ZipSha
-      recommendedFor = "manual install and recovery"
     }
   }
 }

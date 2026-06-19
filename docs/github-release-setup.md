@@ -15,13 +15,12 @@ Upload large files to GitHub Releases. Keep the VPS light.
 
 Required for beta:
 
-- `mcpworld-agent.zip`
+- `MCPWorld-Agent-Setup.exe`
 - `SHA256SUMS.txt`
 - `latest.json`
 
-Recommended for public beta:
+Recommended for managed deployment:
 
-- `MCPWorld-Agent-Setup.exe`
 - `MCPWorld-Agent-Setup.msi`
 
 ## Prepare manifest

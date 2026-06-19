@@ -8,7 +8,6 @@ The pipeline is designed to produce:
 
 - MCPWorld-Agent-Setup.exe
 - MCPWorld-Agent-Setup.msi
-- mcpworld-agent.zip
 - latest.json
 - SHA256SUMS.txt
 
