@@ -38,6 +38,10 @@ The VPS should serve only the site, API, dashboard, admin console, and a small m
 - [x] `system.ping` returns `done` through the queued tool-call flow.
 - [x] First beta tester can file a GitHub Issue or Discussion through structured templates.
 
+## Tester handoff
+
+Give beta testers docs/beta-first-use-guide.md before asking them to install the agent or file public issues.
+
 ## Feedback intake
 
 Use the structured GitHub Issue Forms for beta reports:

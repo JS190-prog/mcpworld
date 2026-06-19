@@ -24,6 +24,11 @@ The current beta focuses on the minimum real operating path:
 
 Status adapters only check local app availability. Deeper file or UI automation should be added later with explicit allowlists and audit logging.
 
+## Beta tester guide
+
+- First-use guide: docs/beta-first-use-guide.md
+- Live beta site: https://www.tornado616.cloud/mcpworld/
+
 ## Downloads
 
 Use GitHub Releases:
@@ -35,10 +40,10 @@ Use GitHub Releases:
 ## Local smoke checks
 
 ```powershell
-python -m py_compile .ackend\mcpworld_api.py .gent\mcpworld_agent.py
-node --check .pp.js
+python -m py_compile .\backend\mcpworld_api.py .\agent\mcpworld_agent.py
+node --check .\app.js
 node --check .\dashboard.js
-node --check .dmindmin.js
+node --check .\admin\admin.js
 powershell -ExecutionPolicy Bypass -File .\scripts\prepare_agent_release.ps1 -Version 0.2.0-beta.1 -GitHubRepo JS190-prog/mcpworld
 ```
 
