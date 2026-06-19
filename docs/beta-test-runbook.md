@@ -19,7 +19,6 @@ Large binaries should live on GitHub Releases, not on the VPS.
 
 - `MCPWorld-Agent-Setup.exe`: general Windows users.
 - `MCPWorld-Agent-Setup.msi`: managed or enterprise deployment.
-- `mcpworld-agent.zip`: manual install, smoke test, and recovery.
 - `SHA256SUMS.txt`: checksum verification.
 - `latest.json`: update manifest pointing to GitHub release assets.
 
