@@ -6,6 +6,8 @@ import shutil
 import time
 import urllib.request
 
+AGENT_VERSION = "0.2.0-beta.1"
+
 
 def post_json(url, payload):
     data = json.dumps(payload).encode("utf-8")
@@ -96,7 +98,12 @@ def main():
     parser.add_argument("--agent-id", default="")
     parser.add_argument("--poll-once", action="store_true", help="Fetch and execute one queued tool call, then exit.")
     parser.add_argument("--poll-interval", type=int, default=0, help="Poll continuously every N seconds. Use 0 to only register.")
+    parser.add_argument("--version", action="store_true", help="Print the agent version and exit.")
     args = parser.parse_args()
+
+    if args.version:
+        print(AGENT_VERSION)
+        return
 
     response = post_json(
         f"{args.server.rstrip('/')}/api/agent/register",
