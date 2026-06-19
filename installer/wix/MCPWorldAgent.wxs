@@ -26,6 +26,9 @@
       <Component Id="InstallScript" Guid="E2B78225-5B7C-4081-90EB-1BA4385095D8">
         <File Id="InstallPs1" Source="$(var.DistDir)\..\..\agent\install.ps1" KeyPath="yes" />
       </Component>
+      <Component Id="AgentConfigExample" Guid="84626C6E-2590-48A2-A782-E09673B76BC6">
+        <File Id="AgentConfigExampleJson" Source="$(var.DistDir)\..\..\agent\mcpworld-mcp-config.example.json" KeyPath="yes" />
+      </Component>
     </ComponentGroup>
   </Fragment>
 </Wix>

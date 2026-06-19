@@ -18,16 +18,79 @@ PORT = int(os.environ.get("MCPWORLD_PORT", "33210"))
 TOKEN_TTL_SECONDS = int(os.environ.get("MCPWORLD_SESSION_TTL_SECONDS", "3600"))
 
 
-TOOL_CATALOG = [
-    {"id": "system.ping", "category": "system", "label": "Agent ping", "description": "Verify MCPWorld Agent can receive and answer tool calls.", "requiresLocalApp": False},
-    {"id": "word.status", "category": "office", "label": "Word status", "description": "Check whether Word automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "powerpoint.status", "category": "office", "label": "PowerPoint status", "description": "Check whether PowerPoint automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "excel.status", "category": "office", "label": "Excel status", "description": "Check whether Excel automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "cad.status", "category": "cad", "label": "CAD status", "description": "Check whether AutoCAD/GstarCAD/ZWCAD automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "hwp.status", "category": "document", "label": "HWP status", "description": "Check whether Hancom HWP automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "photoshop.status", "category": "creative", "label": "Photoshop status", "description": "Check whether Photoshop automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "blender.status", "category": "creative", "label": "Blender status", "description": "Check whether Blender automation is available on the user's PC.", "requiresLocalApp": True},
+CONNECTOR_CATALOG = [
+    {"slug": "word", "category": "office", "label": "Word", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for Word workflows."},
+    {"slug": "powerpoint", "category": "office", "label": "PowerPoint", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for PowerPoint workflows."},
+    {"slug": "excel", "category": "office", "label": "Excel", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for Excel workflows."},
+    {"slug": "cad", "category": "cad", "label": "CAD", "mcpTarget": "cad", "description": "Use the local CAD MCP through MCPWorld Agent for drawing analysis and automation."},
+    {"slug": "hwp", "category": "document", "label": "HWP", "mcpTarget": "hwp", "description": "Use the local HWP MCP through MCPWorld Agent for Hancom document workflows."},
+    {"slug": "photoshop", "category": "creative", "label": "Photoshop", "mcpTarget": "photoshop", "description": "Use the local Photoshop MCP through MCPWorld Agent for document and layer automation."},
+    {"slug": "blender", "category": "creative", "label": "Blender", "mcpTarget": "blender", "description": "Use the local Blender MCP through MCPWorld Agent for scene and render workflows."},
 ]
+
+TOOL_CATALOG = [
+    {
+        "id": "system.ping",
+        "category": "system",
+        "label": "Agent ping",
+        "description": "Verify MCPWorld Agent can receive and answer tool calls.",
+        "requiresLocalApp": False,
+        "transport": "agent-poll",
+    }
+]
+
+for connector in CONNECTOR_CATALOG:
+    slug = connector["slug"]
+    TOOL_CATALOG.extend(
+        [
+            {
+                "id": f"{slug}.status",
+                "category": connector["category"],
+                "label": f"{connector['label']} app status",
+                "description": f"Check local app availability and the configured {connector['mcpTarget']} MCP endpoint.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+            },
+            {
+                "id": f"{slug}.mcp.status",
+                "category": connector["category"],
+                "label": f"{connector['label']} MCP status",
+                "description": f"List and verify tools exposed by the local {connector['mcpTarget']} MCP endpoint.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll-to-local-mcp",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+            },
+            {
+                "id": f"{slug}.mcp.call",
+                "category": connector["category"],
+                "label": f"{connector['label']} MCP tool call",
+                "description": connector["description"] + " Arguments must include {'tool': '<local_mcp_tool_name>', 'arguments': {...}}.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll-to-local-mcp",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["tool"],
+                    "properties": {
+                        "tool": {"type": "string", "description": "Tool name exposed by the local MCP server."},
+                        "arguments": {"type": "object", "description": "Arguments forwarded to the local MCP tool.", "default": {}},
+                    },
+                },
+            },
+        ]
+    )
+
+TOOL_IDS = {tool["id"] for tool in TOOL_CATALOG}
+SESSION_TOOL_IDS = {connector["slug"] for connector in CONNECTOR_CATALOG}
+SESSION_TOOL_ALLOWLIST = {
+    connector["slug"]: {"system.ping", f"{connector['slug']}.status", f"{connector['slug']}.mcp.status", f"{connector['slug']}.mcp.call"}
+    for connector in CONNECTOR_CATALOG
+}
+
 
 
 def now() -> int:
@@ -422,6 +485,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         body = read_body(self)
         email = (body.get("email") or "demo@mcpworld.local").strip().lower()
         tool = (body.get("tool") or "word").strip().lower()
+        if tool not in SESSION_TOOL_IDS:
+            return json_response(self, 400, {"ok": False, "error": "unknown_connector"})
         with get_db() as db:
             user = db.execute("select * from users where email = ?", (email,)).fetchone()
             if not user:
@@ -457,12 +522,15 @@ class ApiHandler(BaseHTTPRequestHandler):
         session_id = body.get("sessionId") or ""
         tool_name = body.get("toolName") or ""
         arguments = body.get("arguments") or {}
-        if tool_name not in {tool["id"] for tool in TOOL_CATALOG}:
+        if tool_name not in TOOL_IDS:
             return json_response(self, 400, {"ok": False, "error": "unknown_tool"})
         with get_db() as db:
             session = db.execute("select * from sessions where id = ?", (session_id,)).fetchone()
             if not session or session["status"] != "active" or session["expires_at"] < now():
                 return json_response(self, 404, {"ok": False, "error": "active_session_not_found"})
+            allowed_tools = SESSION_TOOL_ALLOWLIST.get(session["tool"], {"system.ping"})
+            if tool_name not in allowed_tools:
+                return json_response(self, 403, {"ok": False, "error": "tool_not_allowed_for_session", "sessionTool": session["tool"]})
             call_id = "call-" + secrets.token_hex(6)
             db.execute(
                 """
