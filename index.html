@@ -1,0 +1,273 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP World | 로컬 프로그램을 ChatGPT에 연결하는 SaaS</title>
+  <meta name="description" content="Windows PC의 Office, CAD, HWP, Photoshop, Blender를 ChatGPT와 안전하게 연결하는 로컬 MCP 게이트웨이 SaaS">
+  <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+  <header class="site-header">
+    <nav class="nav" aria-label="주요 메뉴">
+      <a class="brand" href="#top" aria-label="MCP World 홈">
+        <span class="brand-mark">MW</span>
+        <span>MCP World</span>
+      </a>
+      <button class="nav-toggle" type="button" aria-label="메뉴 열기" aria-expanded="false">☰</button>
+      <div class="nav-links">
+        <a href="#problem">문제</a>
+        <a href="#architecture">구조</a>
+        <a href="#workflow">작동 방식</a>
+        <a href="#tools">지원 도구</a>
+        <a href="#security">보안</a>
+        <a href="#pricing">요금</a>
+        <a href="#deploy">VPS 배포</a>
+      </div>
+      <div class="nav-actions">
+        <button class="btn btn-ghost open-login" type="button">로그인</button>
+        <button class="btn btn-primary open-signup" type="button">무료 시작</button>
+      </div>
+    </nav>
+  </header>
+
+  <main id="top">
+    <section class="hero section">
+      <div class="hero-copy">
+        <p class="eyebrow">Local MCP SaaS Gateway</p>
+        <h1>ChatGPT에서 내 PC의 CAD, Office, HWP를 바로 호출하세요.</h1>
+        <p class="hero-text">MCP World는 웹 SaaS 계정과 Windows 로컬 에이전트를 연결해 프로그램별 MCP 주소를 발급합니다. 사용자는 파일을 반복 업로드하지 않고, 관리자는 세션과 구독 상태를 한 화면에서 운영할 수 있습니다.</p>
+        <div class="hero-actions">
+          <button class="btn btn-primary open-login" type="button">데모 로그인</button>
+          <a class="btn btn-secondary" href="dashboard.html">대시보드 보기</a>
+        </div>
+        <div class="trust-row" aria-label="서비스 원칙">
+          <span>Windows 우선</span>
+          <span>사용자별 세션</span>
+          <span>로컬 파일 우선</span>
+          <span>구독형 운영</span>
+        </div>
+      </div>
+      <div class="hero-visual" aria-label="MCP World 연결 구조">
+        <div class="browser-frame">
+          <div class="frame-bar"><span></span><span></span><span></span></div>
+          <div class="gateway-map">
+            <div class="node node-chat">ChatGPT</div>
+            <div class="route-line"></div>
+            <div class="node node-cloud">MCP World SaaS</div>
+            <div class="route-line"></div>
+            <div class="node node-local">Windows Agent</div>
+          </div>
+          <div class="tool-strip">
+            <span>Word</span><span>PowerPoint</span><span>Excel</span><span>CAD</span><span>HWP</span><span>Photoshop</span><span>Blender</span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <section id="problem" class="section split">
+      <div>
+        <p class="eyebrow">Why this SaaS</p>
+        <h2>브라우저 AI와 로컬 프로그램 사이의 마지막 빈칸을 채웁니다.</h2>
+      </div>
+      <div class="cards three">
+        <article class="card"><span class="tag">Access</span><h3>로컬 주소 문제</h3><p>ChatGPT 웹은 사용자 PC의 127.0.0.1 서비스에 직접 접근할 수 없습니다. SaaS가 인증된 세션 주소를 중개해야 합니다.</p></article>
+        <article class="card"><span class="tag">Workflow</span><h3>반복 업로드 감소</h3><p>도면, 문서, 슬라이드 상태를 MCP로 확인하면 매번 파일을 설명하고 다시 올리는 작업을 줄일 수 있습니다.</p></article>
+        <article class="card"><span class="tag">Business</span><h3>구독형 운영 기반</h3><p>사용자, 플랜, 커넥터 발급, 로컬 에이전트 등록 상태를 분리해 실제 SaaS 과금 모델로 확장할 수 있습니다.</p></article>
+      </div>
+    </section>
+
+    <section id="architecture" class="section">
+      <p class="eyebrow">Architecture</p>
+      <h2>공개 엔드포인트가 아니라 사용자별 세션 라우트로 연결합니다.</h2>
+      <div class="architecture-grid">
+        <article class="card"><span class="tag">1</span><h3>ChatGPT Connector</h3><p>사용자는 프로그램별 MCP 주소를 ChatGPT 커넥터에 등록합니다.</p></article>
+        <article class="card"><span class="tag">2</span><h3>SaaS Auth Gateway</h3><p>계정, 구독 상태, 권한 범위, 세션 만료 시간을 확인합니다.</p></article>
+        <article class="card"><span class="tag">3</span><h3>VPS Relay</h3><p>사용자별 route와 rate limit, 로그 마스킹, tunnel timeout을 적용합니다.</p></article>
+        <article class="card"><span class="tag">4</span><h3>Local Agent</h3><p>Windows PC에서 승인된 로컬 MCP 서버만 실행하고 상태를 보고합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="workflow" class="section">
+      <p class="eyebrow">Workflow</p>
+      <h2>가입부터 ChatGPT 연결까지 5단계</h2>
+      <ol class="timeline">
+        <li><strong>1. 가입</strong><span>Google 또는 이메일 계정으로 SaaS 워크스페이스를 만듭니다.</span></li>
+        <li><strong>2. 에이전트 설치</strong><span>Windows 전용 MCPWorld 에이전트를 내려받아 실행합니다.</span></li>
+        <li><strong>3. 프로그램 등록</strong><span>Office, CAD, HWP, Photoshop, Blender 실행 파일을 등록합니다.</span></li>
+        <li><strong>4. 주소 복사</strong><span>프로그램별 MCP 세션 주소를 ChatGPT 커넥터에 붙여 넣습니다.</span></li>
+        <li><strong>5. 세션 종료</strong><span>작업 후 세션을 만료해 외부 접근 경로를 닫습니다.</span></li>
+      </ol>
+    </section>
+
+    <section id="tools" class="section">
+      <p class="eyebrow">Supported MCP Tools</p>
+      <h2>1차 지원 대상</h2>
+      <div class="cards tools">
+        <article class="card"><span class="tag">Office</span><h3>Word</h3><p>문서 구조, 문장 검토, 서식 점검을 보조합니다.</p></article>
+        <article class="card"><span class="tag">Office</span><h3>PowerPoint</h3><p>슬라이드 구성, 발표 흐름, 도형 배치를 확인합니다.</p></article>
+        <article class="card"><span class="tag">Office</span><h3>Excel</h3><p>표, 수식, 데이터 범위를 읽고 자동화 작업을 돕습니다.</p></article>
+        <article class="card"><span class="tag">CAD</span><h3>CAD / ZWCAD</h3><p>도면 텍스트와 레이어 기반 검토를 지원합니다.</p></article>
+        <article class="card"><span class="tag">Creative</span><h3>Photoshop / Blender</h3><p>이미지와 3D 작업 상태를 로컬 우선 방식으로 연결합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="usecases" class="section split">
+      <div>
+        <p class="eyebrow">Use Cases</p>
+        <h2>CAD·PPT·HWP 실무자가 반복 설명을 줄이는 흐름에 맞췄습니다.</h2>
+      </div>
+      <div class="cards three">
+        <article class="card"><h3>도면 검토</h3><p>CAD/ZWCAD 도면의 레이어, 치수, 텍스트 상태를 확인하고 수정 포인트를 정리합니다.</p></article>
+        <article class="card"><h3>제안서 제작</h3><p>PowerPoint 슬라이드 구조와 발표 흐름을 점검하고 Excel 표와 함께 다듬습니다.</p></article>
+        <article class="card"><h3>공문서 자동화</h3><p>HWP 문서 작성, 서식 점검, 반복 문단 정리를 로컬 파일 우선 방식으로 보조합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="security" class="section security-section">
+      <div>
+        <p class="eyebrow">Security Model</p>
+        <h2>공개 URL 하나로 모든 프로그램을 열어두지 않습니다.</h2>
+        <p>각 커넥터는 사용자 계정, 플랜, 세션 만료, 로컬 에이전트 등록 상태를 확인한 뒤 발급됩니다. 원본 파일은 기본적으로 사용자 PC에 머물고, SaaS는 연결 권한과 세션 라우팅만 관리하는 구조를 목표로 합니다.</p>
+      </div>
+      <ul class="checklist">
+        <li>사용자별 단기 세션 주소</li>
+        <li>프로그램별 커넥터 분리</li>
+        <li>구독 상태 기반 접근 제어</li>
+        <li>관리자 이벤트 로그</li>
+        <li>로컬 파일 원본 저장 최소화</li>
+        <li>정책 문서와 고지 화면 분리</li>
+        <li>결제정보 직접 저장 금지</li>
+        <li>로컬 경로와 세션 키 마스킹</li>
+      </ul>
+    </section>
+
+    <section id="pricing" class="section">
+      <p class="eyebrow">Pricing</p>
+      <h2>VPS 런칭용 요금제 초안</h2>
+      <div class="cards pricing">
+        <article class="price-card"><h3>Free</h3><p class="price">0원</p><p>1 PC, 1개 프로그램, 테스트 세션</p><button class="btn btn-secondary open-signup" type="button">시작</button></article>
+        <article class="price-card"><h3>Starter</h3><p class="price">9,900원/월</p><p>Word, PowerPoint, Excel</p><button class="btn btn-secondary open-checkout" type="button">결제 확인</button></article>
+        <article class="price-card featured"><h3>Pro</h3><p class="price">29,900원/월</p><p>Office, CAD/ZWCAD, HWP</p><button class="btn btn-primary open-checkout" type="button">추천 플랜</button></article>
+        <article class="price-card"><h3>Studio</h3><p class="price">49,900원/월</p><p>Pro, Photoshop, Blender, 긴 세션</p><button class="btn btn-secondary open-checkout" type="button">문의</button></article>
+        <article class="price-card"><h3>Team</h3><p class="price">문의</p><p>중앙 결제, 멤버 관리, MCP별 권한 정책</p><button class="btn btn-secondary open-checkout" type="button">상담 요청</button></article>
+      </div>
+    </section>
+
+    <section id="consent" class="section split">
+      <div>
+        <p class="eyebrow">Consent & Legal</p>
+        <h2>가입, 결제, 로컬 에이전트 설치 전에 필요한 고지를 분리합니다.</h2>
+      </div>
+      <div class="cards three">
+        <article class="card"><h3>가입 동의</h3><p>서비스 이용약관과 개인정보 처리방침은 필수 동의, 마케팅 수신은 선택 동의로 분리합니다.</p></article>
+        <article class="card"><h3>결제 전 고지</h3><p>요금, 자동 갱신, 구독 해지, 환불 기준, 사업자 정보를 결제 전 모달에서 확인합니다.</p></article>
+        <article class="card"><h3>로컬 에이전트 고지</h3><p>로컬 프로그램 제어 범위, 원본 파일 백업 책임, 세션 종료 방법을 별도 문서로 안내합니다.</p></article>
+      </div>
+    </section>
+
+    <section id="deploy" class="section split">
+      <div>
+        <p class="eyebrow">VPS Upload Ready</p>
+        <h2>지금 폴더 그대로 정적 사이트로 올릴 수 있습니다.</h2>
+      </div>
+      <div class="deploy-box">
+        <p>현재 산출물은 백엔드 없이도 동작하는 정적 프론트엔드입니다. VPS에서는 Nginx 또는 Caddy의 웹 루트에 이 폴더 파일을 업로드하면 랜딩, 사용자 대시보드, 관리자 데모를 바로 확인할 수 있습니다.</p>
+        <div class="code-block">/var/www/mcpworld/
+  index.html
+  dashboard.html
+  admin/
+  styles.css
+  app.js
+  dashboard.js
+  admin.js
+  docs/</div>
+      </div>
+    </section>
+
+
+    <section id="support" class="section">
+      <p class="eyebrow">Beta Distribution</p>
+      <h2>Agent installers and support live on GitHub Releases.</h2>
+      <div class="cards three">
+        <article class="card"><span class="tag">Download</span><h3>Agent Download</h3><p>Large installer files are hosted on GitHub Releases to keep VPS bandwidth low.</p><a class="btn btn-primary github-release-link" href="https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1" target="_blank" rel="noopener">GitHub Releases</a></article>
+        <article class="card"><span class="tag">Q&amp;A</span><h3>Questions</h3><p>Beta setup questions and usage notes should go to GitHub Discussions.</p><a class="btn btn-secondary github-discussions-link" href="https://github.com/JS190-prog/mcpworld/discussions" target="_blank" rel="noopener">Discussions</a></article>
+        <article class="card"><span class="tag">Bug</span><h3>Issue Tracking</h3><p>Install failures, connection issues, and tool-call problems should be tracked in GitHub Issues.</p><a class="btn btn-secondary github-issues-link" href="https://github.com/JS190-prog/mcpworld/issues" target="_blank" rel="noopener">Issues</a></article>
+      </div>
+    </section>
+
+    <section id="policies" class="section">
+      <p class="eyebrow">Policy Set</p>
+      <h2>서비스 고지 문서</h2>
+      <div class="policy-grid">
+        <a href="docs/terms-and-policy-map.md">약관 맵</a>
+        <a href="docs/privacy-policy-outline.md">개인정보 처리방침 개요</a>
+        <a href="docs/business-disclosure.md">사업자 정보 고지</a>
+        <a href="docs/consent-ui-plan.md">동의 UI 계획</a>
+        <a href="docs/local-agent-risk-notice.md">로컬 에이전트 고지</a>
+        <a href="docs/data-retention-and-processing.md">자료 처리 및 보관 정책</a>
+        <a href="docs/Auth_Legal_Addendum_Short.md">인증·법무 추가 메모</a>
+        <a href="docs/MCP_SaaS_Webpage_Concept_Plan.md">SaaS 기획 원문</a>
+      </div>
+    </section>
+  </main>
+
+  <footer class="site-footer">
+    <span>© 2026 MCP World SaaS Concept</span>
+    <span>Static VPS-ready prototype</span>
+  </footer>
+
+  <dialog id="loginDialog" class="modal">
+    <form method="dialog" class="modal-box">
+      <button class="modal-close" type="button" aria-label="닫기">×</button>
+      <h2>데모 로그인</h2>
+      <div class="demo-credential">
+        <strong>테스트 계정</strong>
+        <span>아이디: <code>demo</code></span>
+        <span>비밀번호: <code>demo1234</code></span>
+      </div>
+      <label>아이디 또는 이메일<input id="loginUser" type="text" value="demo" autocomplete="username"></label>
+      <label>비밀번호<input id="loginPass" type="password" value="demo1234" autocomplete="current-password"></label>
+      <p class="form-message" id="loginMessage" role="status"></p>
+      <button class="btn btn-primary full" id="loginSubmit" type="button">대시보드로 이동</button>
+      <button class="btn btn-secondary full open-signup" type="button">회원가입으로 이동</button>
+    </form>
+  </dialog>
+
+  <dialog id="signupDialog" class="modal">
+    <form method="dialog" class="modal-box">
+      <button class="modal-close" type="button" aria-label="닫기">×</button>
+      <h2>무료 시작</h2>
+      <button class="btn btn-primary full" id="googleSignupButton" type="button">Google로 계속하기</button>
+      <div class="divider">또는</div>
+      <label>이메일<input id="signupEmail" type="email" placeholder="you@example.com"></label>
+      <label>표시 이름<input id="signupName" type="text" placeholder="회사 또는 이름"></label>
+      <label>비밀번호<input id="signupPass" type="password" placeholder="8자 이상"></label>
+      <label class="checkbox"><input id="agreeTerms" type="checkbox"> 서비스 이용약관 동의</label>
+      <label class="checkbox"><input id="agreePrivacy" type="checkbox"> 개인정보 처리방침 동의</label>
+      <label class="checkbox"><input id="agreeAgentNotice" type="checkbox"> 로컬 에이전트 사용 고지 확인</label>
+      <label class="checkbox"><input id="agreeMarketing" type="checkbox"> 서비스 소식 수신 동의 선택</label>
+      <p class="form-message" id="signupMessage" role="status"></p>
+      <button class="btn btn-primary full" id="signupSubmit" type="button">계정 만들기</button>
+    </form>
+  </dialog>
+
+  <dialog id="checkoutDialog" class="modal">
+    <form method="dialog" class="modal-box">
+      <button class="modal-close" type="button" aria-label="닫기">×</button>
+      <h2>결제 전 확인</h2>
+      <ul class="modal-list">
+        <li>실서비스에서는 토스페이먼츠, Stripe, Paddle 같은 hosted checkout을 연결합니다.</li>
+        <li>카드 원문 정보는 MCP World 서버에 저장하지 않는 구성을 권장합니다.</li>
+        <li>구독 상태는 커넥터 발급 API에서 매번 검증해야 합니다.</li>
+        <li>자동 갱신, 구독 해지 방법, 환불 기준은 결제 전 별도 확인해야 합니다.</li>
+        <li>유료 MCP 세션이나 외부 연동이 시작된 경우 환불 제한이 생길 수 있습니다.</li>
+      </ul>
+      <a class="btn btn-secondary full" href="docs/business-disclosure.md">사업자 고지 보기</a>
+    </form>
+  </dialog>
+
+  <script src="site-config.js"></script>
+  <script src="app.js"></script>
+</body>
+</html>

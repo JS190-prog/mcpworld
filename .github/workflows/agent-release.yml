@@ -1,0 +1,65 @@
+name: Build MCPWorld Agent Installers
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: Agent version without leading v
+        required: true
+        default: 0.2.0-beta.1
+      release_tag:
+        description: GitHub release tag
+        required: true
+        default: v0.2.0-beta.1
+  push:
+    tags:
+      - 'v*'
+
+permissions:
+  contents: write
+
+jobs:
+  build-agent-installers:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Set version
+        id: version
+        shell: pwsh
+        run: |
+          $Version = '${{ github.event.inputs.version }}'
+          if (!$Version) { $Version = '${{ github.ref_name }}'.TrimStart('v') }
+          $Tag = '${{ github.event.inputs.release_tag }}'
+          if (!$Tag) { $Tag = "v$Version" }
+          "version=$Version" >> $env:GITHUB_OUTPUT
+          "tag=$Tag" >> $env:GITHUB_OUTPUT
+
+      - name: Set up Python
+        uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+
+      - name: Install Windows installer toolchains
+        shell: pwsh
+        run: |
+          choco install innosetup wixtoolset -y --no-progress
+
+      - name: Build installers
+        shell: pwsh
+        run: |
+          .\scripts\build_agent_release.ps1 -Version '${{ steps.version.outputs.version }}' -GitHubRepo '${{ github.repository }}'
+
+      - name: Upload workflow artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: mcpworld-agent-${{ steps.version.outputs.version }}
+          path: dist/agent-release/*
+
+      - name: Upload release assets
+        shell: pwsh
+        env:
+          GH_TOKEN: ${{ github.token }}
+        run: |
+          gh release upload '${{ steps.version.outputs.tag }}' dist/agent-release/* --repo '${{ github.repository }}' --clobber

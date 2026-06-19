@@ -1,0 +1,31 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<Wix xmlns="http://schemas.microsoft.com/wix/2006/wi">
+  <Product Id="*" Name="MCPWorld Agent" Language="1033" Version="$(var.ProductVersion)" Manufacturer="MCPWorld" UpgradeCode="A61F54BA-2D80-4F8E-ABF7-8D201CE95560">
+    <Package InstallerVersion="500" Compressed="yes" InstallScope="perMachine" />
+    <MajorUpgrade DowngradeErrorMessage="A newer version of MCPWorld Agent is already installed." />
+    <MediaTemplate EmbedCab="yes" />
+    <Feature Id="ProductFeature" Title="MCPWorld Agent" Level="1">
+      <ComponentGroupRef Id="AgentComponents" />
+    </Feature>
+    <UIRef Id="WixUI_Minimal" />
+  </Product>
+
+  <Fragment>
+    <Directory Id="TARGETDIR" Name="SourceDir">
+      <Directory Id="ProgramFilesFolder">
+        <Directory Id="INSTALLFOLDER" Name="MCPWorld Agent" />
+      </Directory>
+    </Directory>
+  </Fragment>
+
+  <Fragment>
+    <ComponentGroup Id="AgentComponents" Directory="INSTALLFOLDER">
+      <Component Id="AgentExe" Guid="B3C32F36-6F8C-4BF5-97B2-BA088942059B">
+        <File Id="MCPWorldAgentExe" Source="$(var.DistDir)\mcpworld-agent.exe" KeyPath="yes" />
+      </Component>
+      <Component Id="InstallScript" Guid="E2B78225-5B7C-4081-90EB-1BA4385095D8">
+        <File Id="InstallPs1" Source="$(var.DistDir)\..\..\agent\install.ps1" KeyPath="yes" />
+      </Component>
+    </ComponentGroup>
+  </Fragment>
+</Wix>

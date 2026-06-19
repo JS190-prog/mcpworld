@@ -1,0 +1,33 @@
+; MCPWorld Agent installer for Inno Setup.
+#define MyAppName "MCPWorld Agent"
+#ifndef MyAppVersion
+#define MyAppVersion "0.2.0-beta.1"
+#endif
+#define MyAppPublisher "MCPWorld"
+#define MyAppExeName "mcpworld-agent.exe"
+
+[Setup]
+AppId={{A61F54BA-2D80-4F8E-ABF7-8D201CE95560}
+AppName={#MyAppName}
+AppVersion={#MyAppVersion}
+AppPublisher={#MyAppPublisher}
+DefaultDirName={autopf}\MCPWorld Agent
+DefaultGroupName={#MyAppName}
+DisableProgramGroupPage=yes
+OutputBaseFilename=MCPWorld-Agent-Setup
+Compression=lzma
+SolidCompression=yes
+WizardStyle=modern
+PrivilegesRequired=lowest
+ArchitecturesInstallIn64BitMode=x64
+
+[Files]
+Source: "..\..\dist\agent-release\mcpworld-agent.exe"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\agent\install.ps1"; DestDir: "{app}"; Flags: ignoreversion
+
+[Icons]
+Name: "{group}\MCPWorld Agent"; Filename: "{app}\{#MyAppExeName}"
+Name: "{group}\Uninstall MCPWorld Agent"; Filename: "{uninstallexe}"
+
+[Run]
+Filename: "{app}\{#MyAppExeName}"; Parameters: "--version"; Flags: runhidden waituntilterminated
