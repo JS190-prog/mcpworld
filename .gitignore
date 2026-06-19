@@ -17,3 +17,6 @@ Thumbs.db
 __pycache__/
 *.pyc
 __write_test.tmp
+
+# Build outputs
+dist/
