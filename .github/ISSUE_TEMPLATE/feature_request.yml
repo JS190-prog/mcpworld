@@ -1,0 +1,39 @@
+name: Feature request
+description: Suggest a beta feature, connector, or admin improvement.
+title: "[Feature]: "
+labels: ["enhancement", "beta"]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: Problem
+      description: What workflow should MCPWorld improve?
+    validations:
+      required: true
+  - type: textarea
+    id: proposal
+    attributes:
+      label: Proposed behavior
+      description: Describe the smallest useful version of the feature.
+    validations:
+      required: true
+  - type: dropdown
+    id: area
+    attributes:
+      label: Area
+      options:
+        - Website
+        - Dashboard
+        - Admin console
+        - Agent
+        - Tool adapter
+        - Billing/account
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: safety
+    attributes:
+      label: Safety or privacy concerns
+      description: Note any local file access, app-control, consent, or audit requirements.

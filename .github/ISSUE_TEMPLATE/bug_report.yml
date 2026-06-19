@@ -1,0 +1,65 @@
+name: Bug report
+description: Report a reproducible MCPWorld beta bug.
+title: "[Bug]: "
+labels: ["bug", "beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for testing MCPWorld. Please avoid posting private documents, access tokens, local file contents, or personal information.
+  - type: dropdown
+    id: area
+    attributes:
+      label: Affected area
+      options:
+        - Website or dashboard
+        - Agent install or startup
+        - Agent registration
+        - Tool call queue
+        - Admin console
+        - Billing or account mock flow
+        - Documentation
+        - Other
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Agent version
+      description: Run `mcpworld-agent.exe --version` if available.
+      placeholder: "0.2.0-beta.1"
+  - type: input
+    id: windows
+    attributes:
+      label: Windows version
+      placeholder: "Windows 11 23H2"
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      description: List the smallest steps that trigger the bug.
+      placeholder: |
+        1. Open ...
+        2. Click ...
+        3. Run ...
+    validations:
+      required: true
+  - type: textarea
+    id: expected
+    attributes:
+      label: Expected result
+    validations:
+      required: true
+  - type: textarea
+    id: actual
+    attributes:
+      label: Actual result
+      description: Include exact error text when possible.
+    validations:
+      required: true
+  - type: textarea
+    id: logs
+    attributes:
+      label: Sanitized logs or screenshots
+      description: Remove tokens, local file contents, customer data, and personal information before posting.
+      render: text

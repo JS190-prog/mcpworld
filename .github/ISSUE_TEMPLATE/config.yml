@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: Beta Q&A and setup questions
+    url: https://github.com/JS190-prog/mcpworld/discussions
+    about: Ask setup questions, share beta notes, or discuss expected behavior.
+  - name: Latest beta release
+    url: https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1
+    about: Download the current MCPWorld Agent beta installer and checksums.
