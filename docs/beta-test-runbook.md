@@ -32,10 +32,10 @@ The VPS should serve only the site, API, dashboard, admin console, and a small m
 - [ ] Release includes ZIP, EXE if available, MSI if available, and checksums.
 - [ ] Main site download link opens GitHub Releases latest page.
 - [ ] Dashboard install button opens GitHub Releases latest page.
-- [ ] `/api/health` returns `ok: true` on the VPS.
-- [ ] `/api/tools/catalog` returns at least `system.ping`.
-- [ ] Agent registration succeeds for the beta account.
-- [ ] `system.ping` returns `done` through the queued tool-call flow.
+- [x] `/api/health` returns `ok: true` on the VPS.
+- [x] `/api/tools/catalog` returns at least `system.ping`.
+- [x] Agent registration succeeds for the beta account.
+- [x] `system.ping` returns `done` through the queued tool-call flow.
 - [x] First beta tester can file a GitHub Issue or Discussion through structured templates.
 
 ## Feedback intake
@@ -47,6 +47,18 @@ Use the structured GitHub Issue Forms for beta reports:
 - Feature request: connector, dashboard, admin, billing, or documentation improvements.
 
 General setup questions should go to GitHub Discussions. Operator triage details live in `docs/beta-feedback.md`.
+
+## 2026-06-19 live smoke result
+
+Production URL: `https://www.tornado616.cloud/mcpworld`
+
+- `GET /api/health`: `ok: true`
+- `GET /api/tools/catalog`: includes `system.ping`
+- `POST /api/agent/register`: test agent registered
+- `POST /api/tool-calls/enqueue`: `system.ping` queued
+- `POST /api/agent/poll`: queued call dispatched
+- `POST /api/agent/result`: call completed with `pong: true`
+- `POST /api/sessions/{session_id}/terminate`: test session terminated
 
 ## Smoke test commands
 
