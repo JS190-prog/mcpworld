@@ -21,9 +21,12 @@ New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
 Compress-Archive -Force -Path $AgentPy,$InstallPs1 -DestinationPath $AgentZip
 
-python -m pip install --upgrade pip
-python -m pip install pyinstaller
-python -m PyInstaller --onefile --name mcpworld-agent --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work") --specpath $BuildDir $AgentPy
+$VenvDir = Join-Path $BuildDir "venv"
+python -m venv $VenvDir
+$VenvPython = Join-Path $VenvDir "Scripts\python.exe"
+& $VenvPython -m pip install --upgrade pip
+& $VenvPython -m pip install pyinstaller
+& $VenvPython -m PyInstaller --onefile --name mcpworld-agent --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work") --specpath $BuildDir $AgentPy
 
 $AgentExe = Join-Path $DistDir "mcpworld-agent.exe"
 if (!(Test-Path -LiteralPath $AgentExe)) {
