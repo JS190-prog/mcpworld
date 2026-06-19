@@ -5,6 +5,35 @@ param(
 )
 
 $ErrorActionPreference = "Stop"
+if ($PSVersionTable.PSVersion.Major -ge 7) {
+  $PSNativeCommandUseErrorActionPreference = $true
+}
+
+function Invoke-CheckedNative {
+  param(
+    [Parameter(Mandatory=$true)][string]$FilePath,
+    [Parameter(ValueFromRemainingArguments=$true)][string[]]$Arguments
+  )
+  & $FilePath @Arguments
+  if ($LASTEXITCODE -ne 0) {
+    throw "Native command failed with exit code ${LASTEXITCODE}: $FilePath $($Arguments -join ' ')"
+  }
+}
+
+function Convert-ToMsiVersion {
+  param([Parameter(Mandatory=$true)][string]$SemanticVersion)
+  $match = [regex]::Match($SemanticVersion, '^(?<major>\d+)\.(?<minor>\d+)\.(?<patch>\d+)(?:[-.](?<build>\d+|[A-Za-z]+\.?)(?<rest>.*))?$')
+  if (!$match.Success) {
+    throw "Version '$SemanticVersion' cannot be converted to an MSI ProductVersion."
+  }
+  $build = 0
+  if ($match.Groups['rest'].Value -match '(\d+)') {
+    $build = [int]$Matches[1]
+  } elseif ($SemanticVersion -match '(\d+)$') {
+    $build = [int]$Matches[1]
+  }
+  return "$($match.Groups['major'].Value).$($match.Groups['minor'].Value).$($match.Groups['patch'].Value).$build"
+}
 $Root = Split-Path -Parent $PSScriptRoot
 $DistDir = Join-Path $Root "dist\agent-release"
 $BuildDir = Join-Path $Root "dist\agent-build"
@@ -13,6 +42,7 @@ $AgentPy = Join-Path $Root "agent\mcpworld_agent.py"
 $InstallPs1 = Join-Path $Root "agent\install.ps1"
 $InnoScript = Join-Path $Root "installer\inno\MCPWorldAgent.iss"
 $WixScript = Join-Path $Root "installer\wix\MCPWorldAgent.wxs"
+$MsiProductVersion = Convert-ToMsiVersion $Version
 
 Remove-Item -Recurse -Force -LiteralPath $DistDir -ErrorAction SilentlyContinue
 Remove-Item -Recurse -Force -LiteralPath $BuildDir -ErrorAction SilentlyContinue
@@ -39,7 +69,7 @@ $SetupMsi = Join-Path $DistDir "MCPWorld-Agent-Setup.msi"
 if (!$SkipInstallerTools) {
   $InnoCompiler = Get-Command iscc.exe -ErrorAction SilentlyContinue
   if ($InnoCompiler) {
-    & $InnoCompiler.Source "/DMyAppVersion=$Version" "/O$DistDir" $InnoScript
+    Invoke-CheckedNative $InnoCompiler.Source "/DMyAppVersion=$Version" "/O$DistDir" $InnoScript
   } else {
     Write-Warning "Inno Setup compiler was not found. Skipping EXE installer."
   }
@@ -48,8 +78,8 @@ if (!$SkipInstallerTools) {
   $Light = Get-Command light.exe -ErrorAction SilentlyContinue
   if ($Candle -and $Light) {
     $WixObj = Join-Path $BuildDir "MCPWorldAgent.wixobj"
-    & $Candle.Source -dProductVersion=$Version -dDistDir=$DistDir -out $WixObj $WixScript
-    & $Light.Source -ext WixUIExtension -out $SetupMsi $WixObj
+    Invoke-CheckedNative $Candle.Source "-dProductVersion=$MsiProductVersion" "-dDistDir=$DistDir" "-out" $WixObj $WixScript
+    Invoke-CheckedNative $Light.Source "-ext" "WixUIExtension" "-out" $SetupMsi $WixObj
   } else {
     Write-Warning "WiX Toolset was not found. Skipping MSI installer."
   }
