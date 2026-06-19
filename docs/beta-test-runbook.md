@@ -36,7 +36,17 @@ The VPS should serve only the site, API, dashboard, admin console, and a small m
 - [ ] `/api/tools/catalog` returns at least `system.ping`.
 - [ ] Agent registration succeeds for the beta account.
 - [ ] `system.ping` returns `done` through the queued tool-call flow.
-- [ ] First beta tester can file a GitHub Issue or Discussion.
+- [x] First beta tester can file a GitHub Issue or Discussion through structured templates.
+
+## Feedback intake
+
+Use the structured GitHub Issue Forms for beta reports:
+
+- Bug report: reproducible website, dashboard, agent, or admin defects.
+- Connection problem: agent registration, polling, queued tool calls, or `system.ping` failures.
+- Feature request: connector, dashboard, admin, billing, or documentation improvements.
+
+General setup questions should go to GitHub Discussions. Operator triage details live in `docs/beta-feedback.md`.
 
 ## Smoke test commands
 

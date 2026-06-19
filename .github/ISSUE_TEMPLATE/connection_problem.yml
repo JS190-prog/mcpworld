@@ -1,0 +1,56 @@
+name: Connection problem
+description: Report an agent-to-VPS connection or tool-call routing problem.
+title: "[Connection]: "
+labels: ["connection", "beta"]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Use this form when the agent does not register, polling fails, or a queued tool call does not complete.
+  - type: input
+    id: release
+    attributes:
+      label: Release version
+      placeholder: "v0.2.0-beta.1"
+    validations:
+      required: true
+  - type: input
+    id: agent_version
+    attributes:
+      label: Agent version output
+      placeholder: "mcpworld-agent.exe --version -> 0.2.0-beta.1"
+  - type: dropdown
+    id: failing_step
+    attributes:
+      label: Failing step
+      options:
+        - Download
+        - Install
+        - Agent version check
+        - Agent register
+        - Agent poll
+        - system.ping
+        - App status tool
+        - Admin log review
+        - Other
+    validations:
+      required: true
+  - type: textarea
+    id: commands
+    attributes:
+      label: Command or action used
+      description: Paste the command or UI action, but remove tokens and secrets.
+      render: powershell
+  - type: textarea
+    id: output
+    attributes:
+      label: Sanitized output
+      description: Paste exact output when possible. Remove tokens and personal data.
+      render: text
+    validations:
+      required: true
+  - type: textarea
+    id: network
+    attributes:
+      label: Network context
+      description: VPN, firewall, proxy, company network, or home network details that may matter.
