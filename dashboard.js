@@ -156,7 +156,7 @@ function renderConnectors(user, options = {}) {
     const registerButton = document.createElement('button');
     registerButton.className = isRegistered ? 'btn btn-secondary connector-register' : 'btn btn-primary connector-register';
     registerButton.type = 'button';
-    registerButton.textContent = isRegistered ? '등록 완료' : '에이전트 등록';
+    registerButton.textContent = isRegistered ? '연동 완료' : '연동 링크 열기';
     registerButton.addEventListener('click', () => {
       window.location.href = pairUrl;
       registeredTools.add(tool.slug);
@@ -196,7 +196,7 @@ renderConnectors(currentUser, { refreshSession: true });
 installMcpworldButton?.addEventListener('click', (event) => {
   installMcpworldButton.textContent = '다운로드 시작';
   setTimeout(() => {
-    installMcpworldButton.textContent = '에이전트 설치';
+    installMcpworldButton.textContent = '에이전트 다운로드';
   }, 1400);
 });
 
