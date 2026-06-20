@@ -29,6 +29,17 @@ server {
     try_files $uri $uri/ /mcpworld/index.html;
   }
 
+  location = /mcpworld/mcp {
+    proxy_pass http://127.0.0.1:33210/mcp;
+    proxy_http_version 1.1;
+    proxy_read_timeout 300s;
+    proxy_send_timeout 300s;
+    proxy_set_header Host $host;
+    proxy_set_header X-Real-IP $remote_addr;
+    proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+    proxy_set_header X-Forwarded-Proto $scheme;
+  }
+
   location ^~ /mcpworld/api/ {
     proxy_pass http://127.0.0.1:33210/;
     proxy_http_version 1.1;
@@ -77,6 +88,7 @@ GOOGLE_REDIRECT_URI
 BILLING_PROVIDER
 BILLING_CHECKOUT_URL
 BILLING_WEBHOOK_SECRET
+MCPWORLD_PROXY_PUBLIC_BASE=https://mcpworld-proxy.YOUR_SUBDOMAIN.workers.dev/mcpworld
 ```
 
 ## Demo Credentials
@@ -89,6 +101,6 @@ BILLING_WEBHOOK_SECRET
 
 - Replace demo login with real OAuth/email authentication.
 - Add billing provider hosted checkout and subscription webhooks.
-- Implement the real `/mcpworld/relay/...` MCP session router on the VPS.
+- Deploy the Cloudflare Worker proxy in `workers/mcpworld-proxy/` if public MCP links should hide the direct VPS route.
 - Build and sign the Windows local agent installer.
 - Store audit logs for admin actions and connector issuance.

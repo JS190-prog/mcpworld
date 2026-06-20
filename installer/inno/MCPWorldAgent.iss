@@ -24,6 +24,7 @@ ArchitecturesInstallIn64BitMode=x64
 [Files]
 Source: "..\..\dist\agent-release\mcpworld-agent.exe"; DestDir: "{app}"; Flags: ignoreversion
 Source: "..\..\agent\install.ps1"; DestDir: "{app}"; Flags: ignoreversion
+Source: "..\..\agent\mcpworld-mcp-config.example.json"; DestDir: "{app}"; Flags: ignoreversion
 
 [Icons]
 Name: "{group}\MCPWorld Agent"; Filename: "{app}\{#MyAppExeName}"

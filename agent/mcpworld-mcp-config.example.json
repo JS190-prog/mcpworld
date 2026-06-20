@@ -1,0 +1,39 @@
+{
+  "mcps": [
+    {
+      "id": "office",
+      "name": "Office MCP",
+      "local_port": 18004,
+      "path": "/omcp/",
+      "app_hint": "Start the Office MCP server that exposes Word, PowerPoint, and Excel tools."
+    },
+    {
+      "id": "cad",
+      "name": "CAD MCP",
+      "local_port": 18001,
+      "path": "/cmcp/",
+      "app_hint": "Open the target drawing in AutoCAD, GstarCAD, or ZWCAD before calling CAD tools."
+    },
+    {
+      "id": "hwp",
+      "name": "HWP MCP",
+      "local_port": 18003,
+      "path": "/hmcp/",
+      "app_hint": "Open Hancom HWP and keep the HWP MCP server running."
+    },
+    {
+      "id": "photoshop",
+      "name": "Photoshop MCP",
+      "local_port": 18002,
+      "path": "/pmcp/",
+      "app_hint": "Open Photoshop and the target document before calling Photoshop tools."
+    },
+    {
+      "id": "blender",
+      "name": "Blender MCP",
+      "local_port": 18000,
+      "path": "/bmcp/",
+      "app_hint": "Start Blender and its MCP addon before calling Blender tools."
+    }
+  ]
+}

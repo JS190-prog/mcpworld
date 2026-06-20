@@ -16,18 +16,83 @@ DB_PATH = Path(os.environ.get("MCPWORLD_DB", "/var/lib/mcpworld/mcpworld.sqlite3
 HOST = os.environ.get("MCPWORLD_HOST", "127.0.0.1")
 PORT = int(os.environ.get("MCPWORLD_PORT", "33210"))
 TOKEN_TTL_SECONDS = int(os.environ.get("MCPWORLD_SESSION_TTL_SECONDS", "3600"))
+MCP_WAIT_SECONDS = float(os.environ.get("MCPWORLD_MCP_WAIT_SECONDS", "25"))
+PROXY_PUBLIC_BASE = os.environ.get("MCPWORLD_PROXY_PUBLIC_BASE", "").rstrip("/")
 
+
+CONNECTOR_CATALOG = [
+    {"slug": "word", "category": "office", "label": "Word", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for Word workflows."},
+    {"slug": "powerpoint", "category": "office", "label": "PowerPoint", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for PowerPoint workflows."},
+    {"slug": "excel", "category": "office", "label": "Excel", "mcpTarget": "office", "description": "Use the local Office MCP through MCPWorld Agent for Excel workflows."},
+    {"slug": "cad", "category": "cad", "label": "CAD", "mcpTarget": "cad", "description": "Use the local CAD MCP through MCPWorld Agent for drawing analysis and automation."},
+    {"slug": "hwp", "category": "document", "label": "HWP", "mcpTarget": "hwp", "description": "Use the local HWP MCP through MCPWorld Agent for Hancom document workflows."},
+    {"slug": "photoshop", "category": "creative", "label": "Photoshop", "mcpTarget": "photoshop", "description": "Use the local Photoshop MCP through MCPWorld Agent for document and layer automation."},
+    {"slug": "blender", "category": "creative", "label": "Blender", "mcpTarget": "blender", "description": "Use the local Blender MCP through MCPWorld Agent for scene and render workflows."},
+]
 
 TOOL_CATALOG = [
-    {"id": "system.ping", "category": "system", "label": "Agent ping", "description": "Verify MCPWorld Agent can receive and answer tool calls.", "requiresLocalApp": False},
-    {"id": "word.status", "category": "office", "label": "Word status", "description": "Check whether Word automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "powerpoint.status", "category": "office", "label": "PowerPoint status", "description": "Check whether PowerPoint automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "excel.status", "category": "office", "label": "Excel status", "description": "Check whether Excel automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "cad.status", "category": "cad", "label": "CAD status", "description": "Check whether AutoCAD/GstarCAD/ZWCAD automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "hwp.status", "category": "document", "label": "HWP status", "description": "Check whether Hancom HWP automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "photoshop.status", "category": "creative", "label": "Photoshop status", "description": "Check whether Photoshop automation is available on the user's PC.", "requiresLocalApp": True},
-    {"id": "blender.status", "category": "creative", "label": "Blender status", "description": "Check whether Blender automation is available on the user's PC.", "requiresLocalApp": True},
+    {
+        "id": "system.ping",
+        "category": "system",
+        "label": "Agent ping",
+        "description": "Verify MCPWorld Agent can receive and answer tool calls.",
+        "requiresLocalApp": False,
+        "transport": "agent-poll",
+    }
 ]
+
+for connector in CONNECTOR_CATALOG:
+    slug = connector["slug"]
+    TOOL_CATALOG.extend(
+        [
+            {
+                "id": f"{slug}.status",
+                "category": connector["category"],
+                "label": f"{connector['label']} app status",
+                "description": f"Check local app availability and the configured {connector['mcpTarget']} MCP endpoint.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+            },
+            {
+                "id": f"{slug}.mcp.status",
+                "category": connector["category"],
+                "label": f"{connector['label']} MCP status",
+                "description": f"List and verify tools exposed by the local {connector['mcpTarget']} MCP endpoint.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll-to-local-mcp",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+            },
+            {
+                "id": f"{slug}.mcp.call",
+                "category": connector["category"],
+                "label": f"{connector['label']} MCP tool call",
+                "description": connector["description"] + " Arguments must include {'tool': '<local_mcp_tool_name>', 'arguments': {...}}.",
+                "requiresLocalApp": True,
+                "transport": "agent-poll-to-local-mcp",
+                "connector": slug,
+                "mcpTarget": connector["mcpTarget"],
+                "inputSchema": {
+                    "type": "object",
+                    "required": ["tool"],
+                    "properties": {
+                        "tool": {"type": "string", "description": "Tool name exposed by the local MCP server."},
+                        "arguments": {"type": "object", "description": "Arguments forwarded to the local MCP tool.", "default": {}},
+                    },
+                },
+            },
+        ]
+    )
+
+TOOL_IDS = {tool["id"] for tool in TOOL_CATALOG}
+SESSION_TOOL_IDS = {connector["slug"] for connector in CONNECTOR_CATALOG}
+SESSION_TOOL_ALLOWLIST = {
+    connector["slug"]: {"system.ping", f"{connector['slug']}.status", f"{connector['slug']}.mcp.status", f"{connector['slug']}.mcp.call"}
+    for connector in CONNECTOR_CATALOG
+}
+
 
 
 def now() -> int:
@@ -55,6 +120,12 @@ def get_db():
     return conn
 
 
+def ensure_column(db, table, column, definition):
+    existing = {row["name"] for row in db.execute(f"pragma table_info({table})").fetchall()}
+    if column not in existing:
+        db.execute(f"alter table {table} add column {column} {definition}")
+
+
 def init_db():
     with get_db() as db:
         db.executescript(
@@ -76,6 +147,7 @@ def init_db():
               user_id text not null,
               tool text not null,
               token_hash text not null,
+              route_key text,
               route text not null,
               status text not null default 'active',
               relay_status text not null default 'waiting_agent',
@@ -184,19 +256,20 @@ def log_event(db, actor, event_type, target, status, message):
 
 def create_session(db, user_id, tool):
     token = secrets.token_urlsafe(24)
+    route_key = "mw-" + secrets.token_urlsafe(12).replace("=", "")
     session_id = "ses-" + secrets.token_hex(5)
     expires_at = now() + TOKEN_TTL_SECONDS
     user = db.execute("select email from users where id = ?", (user_id,)).fetchone()
-    user_key = urllib.parse.quote((user["email"].split("@")[0] if user else "demo").lower())
-    route = f"{APP_ROOT}/relay/u/{user_key}/mcp/{tool}?session={session_id}&token={token}"
+    encoded_key = urllib.parse.quote(route_key)
+    route = f"{PROXY_PUBLIC_BASE}/{encoded_key}/mcp" if PROXY_PUBLIC_BASE else f"{APP_ROOT}/mcp?key={encoded_key}"
     db.execute(
         """
-        insert into sessions (id, user_id, tool, token_hash, route, status, relay_status, created_at, expires_at)
-        values (?, ?, ?, ?, ?, 'active', 'waiting_agent', ?, ?)
+        insert into sessions (id, user_id, tool, token_hash, route_key, route, status, relay_status, created_at, expires_at)
+        values (?, ?, ?, ?, ?, ?, 'active', 'waiting_agent', ?, ?)
         """,
-        (session_id, user_id, tool, hash_secret(token), route, now(), expires_at),
+        (session_id, user_id, tool, hash_secret(token), route_key, route, now(), expires_at),
     )
-    log_event(db, user["email"] if user else "system", "session.issue", session_id, "success", f"{tool} connector issued")
+    log_event(db, user["email"] if user else "system", "session.issue", session_id, "success", f"{tool} mcpworld short connector issued")
     return {"id": session_id, "tool": tool, "route": route, "expiresAt": expires_at, "status": "active"}
 
 
@@ -229,6 +302,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.admin_bootstrap()
             if path == "/tools/catalog":
                 return json_response(self, 200, {"ok": True, "tools": TOOL_CATALOG})
+            if path == "/mcp":
+                return self.mcp_endpoint_status(query)
             if path.startswith("/tool-calls/"):
                 call_id = path.split("/")[2]
                 return self.get_tool_call(call_id)
@@ -252,6 +327,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.checkout()
             if path == "/billing/webhook":
                 return self.billing_webhook()
+            if path == "/mcp":
+                return self.mcp_json_rpc(query)
             if path == "/sessions/issue":
                 return self.issue_session()
             if path.startswith("/sessions/") and path.endswith("/terminate"):
@@ -270,6 +347,130 @@ class ApiHandler(BaseHTTPRequestHandler):
             return json_response(self, 404, {"ok": False, "error": "not_found"})
         except Exception as exc:
             return json_response(self, 500, {"ok": False, "error": "server_error", "message": str(exc)})
+
+    def resolve_short_session(self, query):
+        route_key = (query.get("key") or query.get("mcpworld") or [""])[0]
+        if not route_key:
+            return None, {"ok": False, "error": "missing_key", "message": "Use /mcp?key=YOUR_MCPWORLD_KEY."}
+        with get_db() as db:
+            session = db.execute("select * from sessions where route_key = ?", (route_key,)).fetchone()
+            if not session:
+                return None, {"ok": False, "error": "session_not_found"}
+            if session["expires_at"] < now() or session["status"] != "active":
+                return None, {"ok": False, "error": "session_expired"}
+            return dict(session), None
+
+    def mcp_endpoint_status(self, query):
+        session, error = self.resolve_short_session(query)
+        if error:
+            status = 400 if error["error"] == "missing_key" else 404 if error["error"] == "session_not_found" else 410
+            return json_response(self, status, error)
+        return json_response(
+            self,
+            200,
+            {
+                "ok": True,
+                "service": "mcpworld",
+                "endpoint": "/mcp",
+                "sessionId": session["id"],
+                "connector": session["tool"],
+                "message": "Short MCPWorld endpoint is valid. Use this URL as the MCP server URL.",
+            },
+        )
+
+    def mcp_json_rpc(self, query):
+        session, error = self.resolve_short_session(query)
+        if error:
+            status = 400 if error["error"] == "missing_key" else 404 if error["error"] == "session_not_found" else 410
+            return json_response(self, status, error)
+        payload = read_body(self)
+        if isinstance(payload, list):
+            responses = [self.handle_mcp_rpc_item(item, session) for item in payload]
+            return json_response(self, 200, responses)
+        return json_response(self, 200, self.handle_mcp_rpc_item(payload, session))
+
+    def handle_mcp_rpc_item(self, payload, session):
+        rpc_id = payload.get("id") if isinstance(payload, dict) else None
+        method = payload.get("method") if isinstance(payload, dict) else ""
+        params = payload.get("params") or {} if isinstance(payload, dict) else {}
+        try:
+            if method == "initialize":
+                return {
+                    "jsonrpc": "2.0",
+                    "id": rpc_id,
+                    "result": {
+                        "protocolVersion": "2025-06-18",
+                        "serverInfo": {"name": "mcpworld", "version": "0.2.0-beta.1"},
+                        "capabilities": {"tools": {}},
+                    },
+                }
+            if method == "notifications/initialized":
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": {}}
+            if method == "tools/list":
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": {"tools": self.mcp_tools_for_session(session)}}
+            if method == "tools/call":
+                result = self.enqueue_and_wait_for_mcp_call(session, params)
+                return {"jsonrpc": "2.0", "id": rpc_id, "result": result}
+            return {"jsonrpc": "2.0", "id": rpc_id, "error": {"code": -32601, "message": f"Unsupported MCP method: {method}"}}
+        except Exception as exc:
+            return {"jsonrpc": "2.0", "id": rpc_id, "error": {"code": -32000, "message": str(exc)}}
+
+    def mcp_tools_for_session(self, session):
+        allowed = SESSION_TOOL_ALLOWLIST.get(session["tool"], {"system.ping"})
+        tools = []
+        for tool in TOOL_CATALOG:
+            if tool["id"] not in allowed:
+                continue
+            tools.append(
+                {
+                    "name": tool["id"],
+                    "description": tool.get("description", tool.get("label", tool["id"])),
+                    "inputSchema": tool.get("inputSchema", {"type": "object", "properties": {}}),
+                }
+            )
+        return tools
+
+    def enqueue_and_wait_for_mcp_call(self, session, params):
+        tool_name = params.get("name") or ""
+        arguments = params.get("arguments") or {}
+        allowed = SESSION_TOOL_ALLOWLIST.get(session["tool"], {"system.ping"})
+        if tool_name not in TOOL_IDS:
+            raise ValueError("unknown_tool")
+        if tool_name not in allowed:
+            raise ValueError(f"tool_not_allowed_for_session:{session['tool']}")
+        call_id = "call-" + secrets.token_hex(6)
+        with get_db() as db:
+            db.execute(
+                """
+                insert into tool_calls (id, session_id, user_id, tool_name, arguments_json, status, created_at, updated_at)
+                values (?, ?, ?, ?, ?, 'queued', ?, ?)
+                """,
+                (call_id, session["id"], session["user_id"], tool_name, json.dumps(arguments, ensure_ascii=False), now(), now()),
+            )
+            db.execute("update sessions set relay_status = 'queued' where id = ?", (session["id"],))
+            log_event(db, "mcpworld", "mcp.tool.enqueue", call_id, "success", f"{tool_name} queued through short endpoint")
+        deadline = time.time() + MCP_WAIT_SECONDS
+        while time.time() < deadline:
+            with get_db() as db:
+                row = db.execute("select * from tool_calls where id = ?", (call_id,)).fetchone()
+            if row and row["status"] in {"done", "error"}:
+                if row["status"] == "error":
+                    raise ValueError(row["error"] or "agent_error")
+                result = json.loads(row["result_json"] or "null")
+                if isinstance(result, dict) and "content" in result:
+                    return result
+                return {"content": [{"type": "text", "text": json.dumps(result, ensure_ascii=False)}], "callId": call_id}
+            time.sleep(0.5)
+        return {
+            "content": [
+                {
+                    "type": "text",
+                    "text": f"MCPWorld queued {tool_name} as {call_id}. The local agent has not returned a result yet.",
+                }
+            ],
+            "isError": True,
+            "callId": call_id,
+        }
 
     def google_url(self):
         client_id = os.environ.get("GOOGLE_CLIENT_ID")
@@ -422,6 +623,8 @@ class ApiHandler(BaseHTTPRequestHandler):
         body = read_body(self)
         email = (body.get("email") or "demo@mcpworld.local").strip().lower()
         tool = (body.get("tool") or "word").strip().lower()
+        if tool not in SESSION_TOOL_IDS:
+            return json_response(self, 400, {"ok": False, "error": "unknown_connector"})
         with get_db() as db:
             user = db.execute("select * from users where email = ?", (email,)).fetchone()
             if not user:
@@ -457,12 +660,15 @@ class ApiHandler(BaseHTTPRequestHandler):
         session_id = body.get("sessionId") or ""
         tool_name = body.get("toolName") or ""
         arguments = body.get("arguments") or {}
-        if tool_name not in {tool["id"] for tool in TOOL_CATALOG}:
+        if tool_name not in TOOL_IDS:
             return json_response(self, 400, {"ok": False, "error": "unknown_tool"})
         with get_db() as db:
             session = db.execute("select * from sessions where id = ?", (session_id,)).fetchone()
             if not session or session["status"] != "active" or session["expires_at"] < now():
                 return json_response(self, 404, {"ok": False, "error": "active_session_not_found"})
+            allowed_tools = SESSION_TOOL_ALLOWLIST.get(session["tool"], {"system.ping"})
+            if tool_name not in allowed_tools:
+                return json_response(self, 403, {"ok": False, "error": "tool_not_allowed_for_session", "sessionTool": session["tool"]})
             call_id = "call-" + secrets.token_hex(6)
             db.execute(
                 """

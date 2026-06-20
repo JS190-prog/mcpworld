@@ -40,6 +40,7 @@ $BuildDir = Join-Path $Root "dist\agent-build"
 $AgentZip = Join-Path $DistDir "mcpworld-agent.zip"
 $AgentPy = Join-Path $Root "agent\mcpworld_agent.py"
 $InstallPs1 = Join-Path $Root "agent\install.ps1"
+$AgentConfigExample = Join-Path $Root "agent\mcpworld-mcp-config.example.json"
 $InnoScript = Join-Path $Root "installer\inno\MCPWorldAgent.iss"
 $WixScript = Join-Path $Root "installer\wix\MCPWorldAgent.wxs"
 $MsiProductVersion = Convert-ToMsiVersion $Version
@@ -49,7 +50,7 @@ Remove-Item -Recurse -Force -LiteralPath $BuildDir -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
-Compress-Archive -Force -Path $AgentPy,$InstallPs1 -DestinationPath $AgentZip
+Compress-Archive -Force -Path $AgentPy,$InstallPs1,$AgentConfigExample -DestinationPath $AgentZip
 
 $VenvDir = Join-Path $BuildDir "venv"
 python -m venv $VenvDir

@@ -1,12 +1,8 @@
 # MCPWorld single-agent relay architecture
 
-## Goal
+MCPWorld lets a user install only the MCPWorld Agent, then connect MCP tool links from MCPWorld without installing one MCP server per app inside ChatGPT. Public links can be issued through a Cloudflare Worker proxy such as `https://mcpworld-proxy.YOUR_SUBDOMAIN.workers.dev/mcpworld/{key}/mcp` so the direct VPS route is not exposed.
 
-MCPWorld should let a user install only the MCPWorld Agent, then connect MCP tool links from MCPWorld without installing one MCP server per app.
-
-This removes per-tool MCP installation and configuration. It does not remove the need for the target local app itself when a tool controls a local program such as Word, Excel, CAD, HWP, Photoshop, or Blender.
-
-## Runtime flow
+The target local app and its local MCP server still need to exist on the user's PC. The difference is that ChatGPT connects to MCPWorld, and MCPWorld routes approved calls through the installed agent to the already-configured local MCP programs.
 
 ```mermaid
 sequenceDiagram
@@ -14,69 +10,74 @@ sequenceDiagram
     participant VPS as MCPWorld VPS
     participant Queue as Tool call queue
     participant Agent as MCPWorld Agent
-    participant App as Local app adapter
-
+    participant LocalMCP as Local MCP server
+    participant App as Local app
     Client->>VPS: Call MCPWorld tool link
-    VPS->>VPS: Validate session, plan, token, scope
-    VPS->>Queue: Enqueue tool call
+    VPS->>VPS: Validate user, session, plan, token, scope
+    VPS->>Queue: Enqueue allowed tool call
     Agent->>VPS: Poll outbound over HTTPS
     VPS->>Agent: Dispatch queued call
-    Agent->>App: Run built-in adapter
-    App-->>Agent: Result / error
+    Agent->>LocalMCP: JSON-RPC tools/list or tools/call
+    LocalMCP->>App: Run the app-specific automation
+    App-->>LocalMCP: Result / error
+    LocalMCP-->>Agent: MCP result
     Agent->>VPS: Upload result
-    VPS-->>Client: Return tool result
+    VPS-->>Client: Return tool result/status
 ```
 
-## Components
+## Current implementation
 
-### VPS control plane
+### VPS/API
 
-- Publishes MCPWorld links and session routes.
-- Owns authentication, billing state, user status, admin actions, and audit logs.
-- Stores the tool catalog and queues each tool call.
-- Exposes HTTPS endpoints for the installed MCPWorld Agent.
+- `GET /api/tools/catalog` returns the VPS-owned catalog.
+- `POST /mcp?key=...` is the short MCP endpoint used by the Worker proxy.
+- `MCPWORLD_PROXY_PUBLIC_BASE` makes issued dashboard links use the Worker URL shape instead of direct VPS URLs.
+- `POST /api/sessions/issue` creates a connector session for one program slug such as `powerpoint`, `cad`, or `hwp`.
+- `POST /api/tool-calls/enqueue` queues only tools allowed for that session.
+- `GET /api/tool-calls/{call_id}` reads call status and result.
+- `POST /api/agent/register` registers or refreshes the installed agent.
+- `POST /api/agent/poll` dispatches one queued call to the user's agent.
+- `POST /api/agent/result` stores the agent result.
 
 ### MCPWorld Agent
 
-- Installed once on the user's PC.
-- Registers the device with the VPS.
-- Polls the VPS using outbound HTTPS, so the user's PC does not need an inbound public port.
-- Contains built-in adapters for supported local apps.
-- Executes only tools allowed by the VPS session and returns structured results.
+The agent reads a local MCP config from one of these locations:
 
-### Built-in adapters
+1. `--mcp-config C:\path\to\config.json`
+2. `MCPWORLD_LOCAL_MCP_CONFIG`
+3. `%USERPROFILE%\.mcpworld\config.json`
+4. `C:\scratch\mcpworld\config.json`
 
-The current implementation includes status adapters for:
+A public-safe template is available at `agent/mcpworld-mcp-config.example.json`.
 
-- `system.ping`
-- `word.status`
-- `powerpoint.status`
-- `excel.status`
-- `cad.status`
-- `hwp.status`
-- `photoshop.status`
-- `blender.status`
+The agent now supports two layers:
 
-These are the first safe adapter layer. Deeper actions such as opening files, converting documents, exporting drawings, or controlling app UI should be added per adapter with explicit allowlists, file path restrictions, and audit logging.
+- App availability checks: `word.status`, `powerpoint.status`, `excel.status`, `cad.status`, `hwp.status`, `photoshop.status`, `blender.status`.
+- Local MCP relay calls: `word.mcp.call`, `powerpoint.mcp.call`, `excel.mcp.call`, `cad.mcp.call`, `hwp.mcp.call`, `photoshop.mcp.call`, `blender.mcp.call`.
 
-## API surface
+`word`, `powerpoint`, and `excel` map to the local `office` MCP entry. The other slugs map to matching local MCP ids.
 
-- `GET /api/tools/catalog` returns the VPS-owned tool catalog.
-- `POST /api/sessions/issue` creates a session and MCPWorld relay link.
-- `POST /api/tool-calls/enqueue` queues a tool call for a valid session.
-- `GET /api/tool-calls/{call_id}` reads call status and result.
-- `POST /api/agent/register` registers or refreshes the installed agent.
-- `POST /api/agent/poll` lets the agent receive one queued call.
-- `POST /api/agent/result` stores the agent result.
+A relay call uses this argument shape:
+
+```json
+{
+  "tool": "local_mcp_tool_name",
+  "arguments": {
+    "key": "value"
+  }
+}
+```
+
+The agent forwards it to the local MCP endpoint as JSON-RPC `tools/call`.
 
 ## Product wording
 
 Recommended wording:
 
-> Install MCPWorld Agent once. MCPWorld routes approved tool calls through the VPS to your agent, so you do not need to install separate MCP servers for every supported app.
+> Install MCPWorld Agent once. MCPWorld routes approved tool calls through the VPS to your agent, then your agent calls your configured local MCP programs.
 
-Avoid promising:
+Avoid this wording:
 
-> No local software is required.
+> No local program or local MCP server is needed.
 
-That would be inaccurate for tools that need a local application installed.
+That would be inaccurate for tools that need Word, Excel, CAD, HWP, Photoshop, Blender, or their local MCP servers installed and running.
