@@ -23,3 +23,6 @@ dist/
 
 # Test scratch
 .test-tmp/
+
+# Cloudflare Wrangler local state
+workers/**/.wrangler/

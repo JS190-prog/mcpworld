@@ -88,7 +88,7 @@ GOOGLE_REDIRECT_URI
 BILLING_PROVIDER
 BILLING_CHECKOUT_URL
 BILLING_WEBHOOK_SECRET
-MCPWORLD_PROXY_PUBLIC_BASE=https://mcpworld-proxy.YOUR_SUBDOMAIN.workers.dev/mcpworld
+MCPWORLD_PROXY_PUBLIC_BASE=https://mcpworld.tornado616.cloud/mcpworld
 ```
 
 ## Demo Credentials

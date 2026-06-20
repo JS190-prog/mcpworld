@@ -4,5 +4,5 @@ window.MCPWORLD_LINKS = Object.freeze({
   githubIssues: 'https://github.com/JS190-prog/mcpworld/issues',
   githubDiscussions: 'https://github.com/JS190-prog/mcpworld/discussions',
   releaseManifest: 'release/latest.json',
-  mcpProxyBase: ''
+  mcpProxyBase: 'https://mcpworld.tornado616.cloud/mcpworld'
 });
