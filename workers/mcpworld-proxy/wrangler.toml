@@ -4,5 +4,9 @@ compatibility_date = "2026-06-19"
 workers_dev = true
 preview_urls = true
 
+[[routes]]
+pattern = "mcpworld.tornado616.cloud"
+custom_domain = true
+
 [vars]
 MCPWORLD_UPSTREAM_ORIGIN = "https://www.tornado616.cloud"

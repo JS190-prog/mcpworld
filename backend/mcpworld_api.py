@@ -316,6 +316,7 @@ class ApiHandler(BaseHTTPRequestHandler):
     def do_POST(self):
         parsed = urllib.parse.urlparse(self.path)
         path = parsed.path
+        query = urllib.parse.parse_qs(parsed.query)
         if path.startswith("/api/"):
             path = path[4:]
         try:
