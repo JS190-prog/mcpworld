@@ -110,6 +110,16 @@ def json_response(handler, status, payload):
     handler.wfile.write(body)
 
 
+def html_response(handler, status, body):
+    encoded = body.encode("utf-8")
+    handler.send_response(status)
+    handler.send_header("Content-Type", "text/html; charset=utf-8")
+    handler.send_header("Cache-Control", "no-store")
+    handler.send_header("Content-Length", str(len(encoded)))
+    handler.end_headers()
+    handler.wfile.write(encoded)
+
+
 def hash_secret(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
 
@@ -547,7 +557,33 @@ class ApiHandler(BaseHTTPRequestHandler):
                 db.execute("update users set last_seen_at = ? where id = ?", (now(), row["id"]))
                 log_event(db, email, "auth.google_login", row["id"], "success", "google login")
                 row = db.execute("select * from users where id = ?", (row["id"],)).fetchone()
-        return json_response(self, 200, {"ok": True, "user": public_user(row)})
+        user = public_user(row)
+        dashboard_user = {
+            "nickname": user["displayName"],
+            "email": user["email"],
+            "plan": user["plan"],
+        }
+        user_json = json.dumps(dashboard_user, ensure_ascii=False).replace("</", "<\\/")
+        dashboard_url = f"{APP_ROOT}/dashboard.html"
+        return html_response(
+            self,
+            200,
+            f"""<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCPWorld 로그인 완료</title>
+</head>
+<body>
+  <p>Google 로그인 완료. 대시보드로 이동합니다.</p>
+  <script>
+    sessionStorage.setItem('mcpworld_demo_user', JSON.stringify({user_json}));
+    window.location.replace({json.dumps(dashboard_url)});
+  </script>
+</body>
+</html>""",
+        )
 
     def signup(self):
         body = read_body(self)
