@@ -341,6 +341,10 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.billing_webhook()
             if path == "/mcp":
                 return self.mcp_json_rpc(query)
+            if path == "/sessions/links":
+                return self.session_links(regenerate=False)
+            if path == "/sessions/regenerate":
+                return self.session_links(regenerate=True)
             if path == "/sessions/issue":
                 return self.issue_session()
             if path.startswith("/sessions/") and path.endswith("/terminate"):
@@ -669,6 +673,53 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return json_response(self, 404, {"ok": False, "error": "user_not_found"})
             session = create_session(db, user["id"], tool)
         return json_response(self, 200, {"ok": True, "session": session})
+
+    def session_links(self, regenerate=False):
+        body = read_body(self)
+        email = (body.get("email") or "demo@mcpworld.local").strip().lower()
+        current_time = now()
+        with get_db() as db:
+            user = db.execute("select * from users where email = ?", (email,)).fetchone()
+            if not user:
+                return json_response(self, 404, {"ok": False, "error": "user_not_found"})
+            if regenerate:
+                db.execute(
+                    """
+                    update sessions
+                    set status = 'terminated', ended_at = ?
+                    where user_id = ? and status = 'active'
+                    """,
+                    (current_time, user["id"]),
+                )
+                log_event(db, email, "session.regenerate", user["id"], "success", "active connector links terminated before regeneration")
+
+            sessions = []
+            for connector in CONNECTOR_CATALOG:
+                tool = connector["slug"]
+                row = None
+                if not regenerate:
+                    row = db.execute(
+                        """
+                        select * from sessions
+                        where user_id = ? and tool = ? and status = 'active' and expires_at > ?
+                        order by created_at desc
+                        limit 1
+                        """,
+                        (user["id"], tool, current_time),
+                    ).fetchone()
+                if row:
+                    sessions.append(
+                        {
+                            "id": row["id"],
+                            "tool": row["tool"],
+                            "route": row["route"],
+                            "expiresAt": row["expires_at"],
+                            "status": row["status"],
+                        }
+                    )
+                else:
+                    sessions.append(create_session(db, user["id"], tool))
+        return json_response(self, 200, {"ok": True, "regenerated": regenerate, "sessions": sessions})
 
     def terminate_session(self, session_id):
         with get_db() as db:

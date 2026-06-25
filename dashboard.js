@@ -42,6 +42,7 @@ const fallbackUser = {
 
 const registeredTools = new Set();
 let currentSessionId = '';
+const connectorRoutes = new Map();
 
 async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
@@ -85,12 +86,20 @@ function buildConnectorUrl(user, toolSlug, sessionId) {
   return `${getAppBaseUrl()}/mcp?key=${encodeURIComponent(sessionId)}`;
 }
 
-async function issueConnector(user, toolSlug) {
+async function loadConnectorLinks(user, options = {}) {
+  const endpoint = options.regenerate ? '/sessions/regenerate' : '/sessions/links';
   try {
-    const data = await postApi('/sessions/issue', { email: user.email, tool: toolSlug });
-    return data.session.route;
+    const data = await postApi(endpoint, { email: user.email });
+    connectorRoutes.clear();
+    data.sessions.forEach((session) => {
+      connectorRoutes.set(session.tool, session.route);
+    });
+    currentSessionId = data.sessions[0]?.id || currentSessionId || makeSessionId();
+    if (options.regenerate) registeredTools.clear();
+    return true;
   } catch {
-    return buildConnectorUrl(user, toolSlug, currentSessionId);
+    if (!currentSessionId) currentSessionId = makeSessionId();
+    return false;
   }
 }
 
@@ -124,17 +133,14 @@ function setAgentState() {
   if (autoBindButton) autoBindButton.textContent = count === total ? '전체 다시 등록' : '전체 등록';
 }
 
-function renderConnectors(user, options = {}) {
+function renderConnectors(user) {
   if (!connectorList) return;
-  if (options.refreshSession || !currentSessionId) {
-    currentSessionId = makeSessionId();
-    registeredTools.clear();
-  }
+  if (!currentSessionId) currentSessionId = makeSessionId();
   connectorList.innerHTML = '';
 
   connectorTools.forEach((tool) => {
     const isRegistered = registeredTools.has(tool.slug);
-    let connectorUrl = buildConnectorUrl(user, tool.slug, currentSessionId);
+    const connectorUrl = connectorRoutes.get(tool.slug) || buildConnectorUrl(user, tool.slug, currentSessionId);
     const pairUrl = buildPairUrl(user, tool, currentSessionId);
     const row = document.createElement('div');
     row.className = isRegistered ? 'connector-row is-bound' : 'connector-row is-waiting';
@@ -166,7 +172,7 @@ function renderConnectors(user, options = {}) {
       window.location.href = pairUrl;
       registeredTools.add(tool.slug);
       setAgentState();
-      renderConnectors(user, { refreshSession: false });
+      renderConnectors(user);
     });
 
     const copyButton = document.createElement('button');
@@ -176,7 +182,6 @@ function renderConnectors(user, options = {}) {
     copyButton.disabled = !isRegistered;
     copyButton.addEventListener('click', async () => {
       try {
-        connectorUrl = await issueConnector(user, tool.slug);
         await navigator.clipboard.writeText(connectorUrl);
         copyButton.textContent = '복사 완료';
       } catch {
@@ -196,7 +201,9 @@ function renderConnectors(user, options = {}) {
 const currentUser = getUser();
 renderUser(currentUser);
 setAgentState();
-renderConnectors(currentUser, { refreshSession: true });
+loadConnectorLinks(currentUser).then(() => {
+  renderConnectors(currentUser);
+});
 
 installMcpworldButton?.addEventListener('click', (event) => {
   installMcpworldButton.textContent = '다운로드 시작';
@@ -208,15 +215,19 @@ installMcpworldButton?.addEventListener('click', (event) => {
 autoBindButton?.addEventListener('click', () => {
   connectorTools.forEach((tool) => registeredTools.add(tool.slug));
   setAgentState();
-  renderConnectors(currentUser, { refreshSession: false });
+  renderConnectors(currentUser);
 });
 
-refreshConnectors?.addEventListener('click', () => {
-  renderConnectors(currentUser, { refreshSession: true });
+refreshConnectors?.addEventListener('click', async () => {
+  refreshConnectors.disabled = true;
+  refreshConnectors.textContent = '재생성 중';
+  await loadConnectorLinks(currentUser, { regenerate: true });
+  renderConnectors(currentUser);
   setAgentState();
-  refreshConnectors.textContent = '새 주소 발급 완료';
+  refreshConnectors.textContent = '기존 토큰 만료 완료';
   setTimeout(() => {
-    refreshConnectors.textContent = '주소 다시 발급';
+    refreshConnectors.disabled = false;
+    refreshConnectors.textContent = '토큰 다시 생성';
   }, 1400);
 });
 
