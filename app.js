@@ -186,12 +186,22 @@ document.querySelector('#signupSubmit')?.addEventListener('click', () => {
     });
 });
 
-document.querySelector('#googleSignupButton')?.addEventListener('click', async () => {
+async function startGoogleOAuth(messageTarget) {
   try {
     const data = await getApi('/auth/google/url');
     if (data.url) window.location.href = data.url;
   } catch (error) {
-    signupMessage.textContent = 'Google OAuth 설정이 필요합니다. 서버에 GOOGLE_CLIENT_ID를 설정하세요.';
-    signupMessage.classList.add('error');
+    if (messageTarget) {
+      messageTarget.textContent = 'Google OAuth 설정이 필요합니다. 서버에 GOOGLE_CLIENT_ID를 설정하세요.';
+      messageTarget.classList.add('error');
+    }
   }
+}
+
+document.querySelector('#googleLoginButton')?.addEventListener('click', () => {
+  startGoogleOAuth(loginMessage);
+});
+
+document.querySelector('#googleSignupButton')?.addEventListener('click', () => {
+  startGoogleOAuth(signupMessage);
 });
