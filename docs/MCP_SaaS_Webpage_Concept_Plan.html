@@ -1,0 +1,391 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP World SaaS 샘플 웹페이지 제작 계획 | MCP World</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="doc-page">
+  <header class="site-header">
+    <nav class="nav" aria-label="문서 메뉴">
+      <a class="brand" href="../index.html" aria-label="MCP World 홈">
+        <span class="brand-mark">MW</span>
+        <span>MCP World</span>
+      </a>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="../index.html">홈</a>
+        <a class="btn btn-secondary" href="../dashboard.html">대시보드</a>
+      </div>
+    </nav>
+  </header>
+  <main class="section doc-shell">
+    <article class="doc-content">
+      <h1>MCP World SaaS 샘플 웹페이지 제작 계획</h1>
+<p>작성일: 2026-06-18 KST 대상 폴더: <code>C:/Users/USER/Desktop/MCP 폴더/main</code> 참고 로컬 소스: <code>C:/scratch/mcpworld</code> 현재 작업 상태: <code>planning_required</code></p>
+<p>&gt; 이 문서는 실제 웹페이지 제작 전에 사용할 기획서입니다. 아직 결제 연동, 개인정보 처리방침 확정, 서버 배포는 수행하지 않았습니다.</p>
+<p>---</p>
+<h2>1. 프로젝트 컨셉</h2>
+<h3>1.1 서비스 한 줄 정의</h3>
+<p>ChatGPT 웹브라우저에서 사용자의 로컬 PC에 있는 CAD, PowerPoint, Excel, HWP, Photoshop, Blender 같은 MCP 도구를 안전하게 연결해 주는 로컬 MCP 게이트웨이 SaaS.</p>
+<h3>1.2 사용자 문제</h3>
+<p>기존 사용자는 다음 문제를 겪는다.</p>
+<ul><li>CAD, PPT, Excel, HWP, Photoshop 같은 로컬 프로그램을 AI와 연결하려면 MCP 서버, 포트, 터널, 커넥터 설정을 직접 관리해야 한다.</li><li>ChatGPT 웹은 사용자의 <code>127.0.0.1</code> 로컬 주소에 직접 접근할 수 없다.</li><li>로컬 파일이나 도면을 매번 업로드하고 긴 문맥으로 설명하면 토큰 부담이 커지고, 요금제 변경 압박이 생긴다.</li><li>프로그램별 MCP 서버를 각각 켜고 끄는 과정이 초보자에게 어렵다.</li><li>공개 URL을 잘못 열면 로컬 프로그램과 파일이 외부에 노출될 수 있다.</li></ul>
+<h3>1.3 제안 가치</h3>
+<p>이 서비스는 사용자가 복잡한 터미널 명령을 몰라도 다음 흐름으로 로컬 MCP를 사용할 수 있게 만든다.</p>
+<pre><code>사용자 회원가입
+  -&gt; Windows 로컬 에이전트 설치
+  -&gt; 로컬 프로그램 실행
+  -&gt; MCP World 또는 경량 Agent가 MCP 서버 실행
+  -&gt; 사용자별 보안 터널 생성
+  -&gt; ChatGPT 커넥터 URL 발급
+  -&gt; ChatGPT 웹에서 CAD/PPT/Excel/HWP/Photoshop 작업</code></pre>
+<h3>1.4 중요한 표현 주의</h3>
+<p>마케팅 문구에서 “토큰이 안 든다”라고 단정하면 안 된다. ChatGPT 사용량과 토큰 정책은 OpenAI/ChatGPT 요금제에 의해 결정된다. 안전한 표현은 다음과 같다.</p>
+<pre><code>긴 파일 설명과 반복 업로드를 줄이고, 로컬 프로그램 상태를 직접 MCP로 확인해 작업 흐름을 단축합니다.</code></pre>
+<p>또는</p>
+<pre><code>브라우저에서 로컬 MCP를 쉽게 연결해 CAD·PPT 작업을 더 적은 반복 설명으로 진행할 수 있게 돕습니다.</code></pre>
+<p>---</p>
+<h2>2. OpenCrab 사이트에서 참고할 구조</h2>
+<p>OpenCrab 사이트는 다음 구조를 참고 대상으로 삼는다.</p>
+<ul><li>Hero 섹션: 서비스 정체성, 핵심 키워드, CTA</li><li>Architecture 섹션: 제품 흐름을 한눈에 보여주는 구조도</li><li>Workflow 섹션: 사용자가 따라갈 단계별 흐름</li><li>Target 섹션: 주요 사용자군 구분</li><li>Use cases 섹션: 실제 사용 사례 나열</li><li>Pricing 섹션: Free / Pro / Expert 식의 단순 요금제</li><li>Policy 섹션: 약관, 개인정보 처리방침, 환불 정책</li></ul>
+<p>이 사이트와 비슷한 정보 구조를 사용하되, 본 서비스는 OpenCrab의 지식팩/Graph RAG 방향이 아니라 “로컬 MCP 연결과 프로그램 제어”를 중심에 둔다.</p>
+<p>---</p>
+<h2>3. 차별화 포지션</h2>
+<h3>3.1 OpenCrab과의 차이</h3>
+<div class="doc-table-wrap"><table><tr><th>구분</th><th>OpenCrab 참고 구조</th><th>MCP World SaaS 방향</th></tr><tr><td>핵심 가치</td><td>문서 지식화, 팩, 검색·질의</td><td>로컬 프로그램 -&gt; MCP -&gt; ChatGPT 웹 연결</td></tr><tr><td>주요 사용자</td><td>연구자, 도메인 전문가, AI 빌더</td><td>CAD/PPT/Excel/HWP/Photoshop 실무자</td></tr><tr><td>주요 산출물</td><td>지식팩, 그래프, 근거 기반 답변</td><td>로컬 도구 연결 세션, 작업 결과 파일</td></tr><tr><td>핵심 기술</td><td>문서 구조화, 팩, 질의</td><td>local agent, reverse tunnel, connector, permission gate</td></tr><tr><td>보안 초점</td><td>업로드 문서와 지식 데이터 격리</td><td>사용자의 로컬 앱·파일 접근 제한과 터널 보안</td></tr></table></div>
+<h3>3.2 웹페이지 대표 문구</h3>
+<pre><code>ChatGPT 웹에서 로컬 CAD와 PowerPoint를 바로 연결하세요.</code></pre>
+<pre><code>복잡한 터널, 포트, MCP 서버 실행을 한 번의 대시보드로 관리합니다.</code></pre>
+<pre><code>파일을 계속 업로드하지 않고, 열려 있는 로컬 프로그램을 MCP로 안전하게 제어합니다.</code></pre>
+<pre><code>CAD·PPT 실무자를 위한 브라우저 기반 로컬 MCP 게이트웨이.</code></pre>
+<p>---</p>
+<h2>4. 대상 MCP 프로그램 분류</h2>
+<p><code>C:/scratch/mcpworld</code> README와 문서 기준으로 샘플 사이트에 노출할 MCP 카테고리는 다음과 같다.</p>
+<h3>4.1 1차 공개 대상</h3>
+<ul><li>Office MCP</li><li>PowerPoint 슬라이드 제작·수정</li><li>Excel 워크북 수정·서식 유지</li><li>발표자료 노트, 애니메이션, 번역 보조</li></ul>
+<ul><li>CAD MCP</li><li>AutoCAD, GstarCAD, ZWCAD 계열 도면 제어</li><li>현재 열린 도면 확인</li><li>레벨값, 치수, 텍스트, 레이어 기반 작업</li></ul>
+<ul><li>HWP MCP</li><li>한글 문서 생성·수정</li><li>표, 문단, 양식 문서 자동화</li></ul>
+<ul><li>Photoshop MCP</li><li>레이어, 문서, 이미지 편집 보조</li><li>배경, 선택 영역, 간단 합성 작업</li></ul>
+<ul><li>Blender MCP</li><li>3D 장면 생성·수정·렌더 보조</li><li>모델 배치와 시각화</li></ul>
+<h3>4.2 2차 확장 대상</h3>
+<ul><li>Local Code MCP</li><li>프로젝트 폴더 읽기·수정·패치 검증</li><li>개발자용 요금제 또는 운영자 도구로 분리 권장</li></ul>
+<ul><li>CLIP/sidecar 계열</li><li>이미지·도면·문서 시각 검색 보조</li></ul>
+<ul><li>Flow API, 법령, 통계, 건축 데이터 MCP</li><li>도메인별 부가 기능으로 별도 확장 기능 영역에서 노출 가능</li></ul>
+<p>---</p>
+<h2>5. 샘플 웹페이지 정보구조</h2>
+<p>대상 폴더 <code>main</code>에는 아래 구조로 샘플 웹페이지를 만들면 좋다.</p>
+<pre><code>main/
+  index.html
+  styles.css
+  app.js
+  assets/
+    logo.svg
+    hero-architecture.svg
+  docs/
+    service-plan.md
+    privacy-checklist.md
+    payment-checklist.md
+    mcp-tool-map.md</code></pre>
+<p>정적 HTML 샘플을 먼저 만들고, 이후 Next.js 또는 SvelteKit으로 옮긴다.</p>
+<h3>5.1 index.html 섹션 구성</h3>
+<ul><li>Navigation</li><li>로고</li><li>Features</li><li>Workflow</li><li>MCP Tools</li><li>Pricing</li><li>Security</li><li>Guide</li><li>Sign in / Start</li></ul>
+<ul><li>Hero</li><li>메인 카피</li><li>서브 카피</li><li>CTA 버튼: “Start local MCP”, “View guide”</li><li>오른쪽: MCP 연결 흐름 다이어그램</li></ul>
+<ul><li>Problem</li><li>ChatGPT 웹은 로컬 주소에 직접 접근할 수 없음</li><li>프로그램별 MCP 서버 실행이 어려움</li><li>파일 반복 업로드와 긴 설명이 번거로움</li></ul>
+<ul><li>Architecture</li><li>Browser</li><li>SaaS Control Plane</li><li>Per-user Secure Tunnel</li><li>Local MCP Agent</li><li>Local Apps</li></ul>
+<ul><li>Tool Cards</li><li>PowerPoint</li><li>Excel</li><li>CAD</li><li>HWP</li><li>Photoshop</li><li>Blender</li></ul>
+<ul><li>Workflow</li><li>Install</li><li>Connect</li><li>Authorize</li><li>Work in ChatGPT</li><li>Stop tunnel</li></ul>
+<ul><li>Security</li><li>사용자별 터널</li><li>세션 만료</li><li>명령 권한 제한</li><li>로컬 파일 직접 업로드 최소화</li><li>로그 마스킹</li><li>결제정보 직접 저장 금지</li></ul>
+<ul><li>Pricing</li><li>Free</li><li>Pro</li><li>Studio</li><li>Team 또는 Expert</li></ul>
+<ul><li>Policies</li><li>Terms</li><li>Privacy</li><li>Refunds</li><li>Security</li></ul>
+<ul><li>Footer</li><li>Contact</li><li>사업자 정보</li><li>정책 링크</li></ul>
+<p>---</p>
+<h2>6. 권장 서비스 아키텍처</h2>
+<h3>6.1 최소 MVP 구조</h3>
+<pre><code>ChatGPT Web Connector
+  -&gt; https://your-domain.com/u/{user}/mcp/{tool}
+  -&gt; SaaS Auth Gateway
+  -&gt; User Session Router
+  -&gt; VPS Reverse Tunnel Endpoint
+  -&gt; User Local Agent
+  -&gt; Local MCP Server
+  -&gt; Local Application</code></pre>
+<h3>6.2 구성 요소</h3>
+<ul><li>Web Frontend</li><li>landing page</li><li>dashboard</li><li>login/signup</li><li>billing portal</li><li>connector URL 발급 화면</li></ul>
+<ul><li>Control Plane API</li><li>사용자 인증</li><li>구독 권한 확인</li><li>세션 발급</li><li>터널 상태 확인</li><li>MCP별 권한 정책 제공</li></ul>
+<ul><li>Local Agent</li><li>Windows 전용 1차 버전</li><li>MCP World와 통합 또는 MCP World 경량화 버전</li><li>사용자의 로컬 MCP 서버 시작·중지</li><li>사용자별 세션 토큰으로 VPS에 outbound 연결</li><li>서버와 터널 상태 표시</li></ul>
+<ul><li>VPS Relay</li><li>nginx 또는 Caddy reverse proxy</li><li>per-user route</li><li>auth middleware</li><li>rate limit</li><li>request log redaction</li><li>tunnel timeout</li></ul>
+<ul><li>Billing System</li><li>Paddle, Toss Payments, Stripe 중 선택</li><li>hosted checkout 사용</li><li>카드번호 직접 저장 금지</li><li>웹훅으로 구독 상태만 저장</li></ul>
+<ul><li>Admin Console</li><li>사용자 상태</li><li>결제 상태</li><li>터널 상태</li><li>abuse 탐지</li><li>계정 정지</li><li>환불 처리 링크</li></ul>
+<p>---</p>
+<h2>7. 개인정보 보호 설계</h2>
+<h3>7.1 기본 원칙</h3>
+<ul><li>카드번호, CVC, 전체 결제 민감정보를 직접 저장하지 않는다.</li><li>사용자의 로컬 파일 내용은 기본적으로 서버에 저장하지 않는다.</li><li>로그에는 파일 내용, 전체 경로, 원문 문서 내용, 공개 URL 토큰을 남기지 않는다.</li><li>사용자가 명시적으로 요청한 경우에만 파일 업로드 또는 원격 처리를 허용한다.</li><li>사용자별 터널과 MCP 접근 권한을 분리한다.</li><li>모든 세션은 만료 시간을 둔다.</li><li>연결 종료 버튼을 웹과 로컬 에이전트 양쪽에 둔다.</li><li>약관, 개인정보 처리방침, 환불 정책을 결제 전에 노출한다.</li></ul>
+<h3>7.2 수집 정보 최소화</h3>
+<div class="doc-table-wrap"><table><tr><th>구분</th><th>수집 가능</th><th>저장 여부</th><th>비고</th></tr><tr><td>계정 이메일</td><td>가능</td><td>저장</td><td>로그인·결제 식별</td></tr><tr><td>결제 customer id</td><td>가능</td><td>저장</td><td>PG 식별자만 저장</td></tr><tr><td>구독 상태</td><td>가능</td><td>저장</td><td>active, canceled 등</td></tr><tr><td>로컬 MCP 상태</td><td>가능</td><td>짧게 저장</td><td>online/offline 정도</td></tr><tr><td>로컬 파일 경로</td><td>원칙적 비저장</td><td>가능하면 마스킹</td><td>전체 경로 노출 금지</td></tr><tr><td>문서 내용</td><td>기본 비저장</td><td>사용자가 업로드할 때만</td><td>별도 동의 필요</td></tr><tr><td>요청 로그</td><td>제한 저장</td><td>마스킹 필수</td><td>토큰, 키, 경로 제거</td></tr></table></div>
+<h3>7.3 사용자 권리 처리</h3>
+<p>대시보드에 다음 기능을 둔다.</p>
+<ul><li>계정 삭제 요청</li><li>결제 포털 이동</li><li>연결된 로컬 에이전트 해제</li><li>세션 전체 만료</li><li>로그 삭제 요청 또는 보관기간 안내</li><li>개인정보 열람·정정·삭제·처리정지 요청 이메일</li></ul>
+<h3>7.4 개인정보 처리방침에 들어갈 항목</h3>
+<ul><li>개인정보처리자 정보</li><li>수집 항목</li><li>처리 목적</li><li>보유·이용 기간</li><li>제3자 제공 여부</li><li>처리 위탁 업체</li><li>국외 이전 여부</li><li>파기 절차</li><li>정보주체 권리</li><li>쿠키·로그 수집</li><li>안전성 확보 조치</li><li>문의처</li><li>변경 고지 방식</li></ul>
+<p>---</p>
+<h2>8. 결제 시스템 계획</h2>
+<h3>8.1 결제 방식</h3>
+<p>초기에는 직접 카드정보를 다루지 않는 hosted checkout 방식이 가장 안전하다.</p>
+<p>권장 선택지:</p>
+<ul><li>Paddle</li><li>Merchant of Record 구조가 장점</li><li>글로벌 SaaS 구독에 적합</li><li>해외 SaaS형 요금제 운영 참고에 적합</li></ul>
+<ul><li>Toss Payments</li><li>국내 사용자 대상 결제 UX에 유리</li><li>카드, 계좌, 간편결제 대응</li><li>한국 사업자·정산·세금계산서 흐름 검토 필요</li></ul>
+<ul><li>Stripe</li><li>글로벌 SaaS에 적합</li><li>한국 사업자 지원 범위와 정산 구조는 최신 확인 필요</li></ul>
+<h3>8.2 저장할 결제 데이터</h3>
+<p>서버 DB에는 아래만 저장한다.</p>
+<pre><code>user_id
+plan_id
+billing_provider
+provider_customer_id
+provider_subscription_id
+subscription_status
+current_period_start
+current_period_end
+cancel_at_period_end
+last_webhook_event_id</code></pre>
+<p>저장하지 말아야 할 것:</p>
+<pre><code>card_number
+cvc
+full billing address unless required
+raw payment credential
+checkout session secret</code></pre>
+<h3>8.3 웹훅 보안</h3>
+<ul><li>결제사 웹훅 서명 검증</li><li>event id 멱등 처리</li><li>성공·실패 이벤트 모두 기록</li><li>구독 상태 변경 후 entitlement 테이블 갱신</li><li>webhook raw body는 필요 최소 기간만 보관</li><li>결제 실패 시 grace period 정책 명시</li></ul>
+<h3>8.4 환불 정책 초안</h3>
+<ul><li>결제 후 7일 이내 환불 요청 가능</li><li>단, 유료 기능이 실질적으로 사용되어 로컬 MCP 세션, 파일 처리, AI 분석, 외부 연동이 시작된 경우 환불 제한 가능</li><li>중복 결제, 명백한 결제 오류, 회사 귀책 장기 장애는 우선 환불 검토</li><li>구독 취소는 다음 결제일부터 적용</li><li>강행 법규와 충돌하면 법규 우선</li></ul>
+<p>---</p>
+<h2>9. 요금제 초안</h2>
+<h3>9.1 Free</h3>
+<p>목적: 체험과 설치 검증</p>
+<p>기능:</p>
+<ul><li>공개 가이드 열람</li><li>로컬 에이전트 설치</li><li>연결 상태 테스트</li><li>1개 MCP까지 짧은 세션</li><li>커뮤니티 지원</li></ul>
+<p>제한:</p>
+<ul><li>세션 시간 제한</li><li>동시 MCP 제한</li><li>고위험 MCP 제한 가능</li></ul>
+<h3>9.2 Pro</h3>
+<p>목적: 개인 실무자</p>
+<p>기능:</p>
+<ul><li>PowerPoint, Excel, HWP, CAD 기본 연결</li><li>사용자별 보안 터널</li><li>대시보드 세션 관리</li><li>커넥터 URL 발급</li><li>기본 로그 마스킹</li></ul>
+<p>추천 사용자:</p>
+<ul><li>PPT 제작자</li><li>CAD 도면 검토자</li><li>한글 문서 작업자</li></ul>
+<h3>9.3 Studio</h3>
+<p>목적: 고급 크리에이터와 설계·문서 작업자</p>
+<p>기능:</p>
+<ul><li>Pro 전체</li><li>Photoshop, Blender 연결</li><li>여러 MCP 동시 세션</li><li>긴 세션 시간</li><li>우선 지원</li></ul>
+<h3>9.4 Team 또는 Expert</h3>
+<p>목적: 사무실·팀 단위</p>
+<p>기능:</p>
+<ul><li>팀 멤버 관리</li><li>중앙 결제</li><li>세션 감사 로그</li><li>MCP별 권한 정책</li><li>전용 서브도메인 또는 전용 relay</li><li>온보딩 지원</li></ul>
+<p>---</p>
+<h2>10. 보안 정책</h2>
+<h3>10.1 절대 금지 구조</h3>
+<p>아래 구조는 피한다.</p>
+<pre><code>공용 URL 하나를 모든 사용자가 공유
+인증 없는 MCP endpoint 공개
+사용자별 토큰 없는 reverse tunnel
+로컬 파일 전체 접근 허용
+C:/ 전체 allowed root 허용
+카드정보 직접 저장
+로그에 원문 문서·전체 파일경로 저장</code></pre>
+<h3>10.2 권장 구조</h3>
+<pre><code>사용자별 세션 URL
+짧은 만료시간
+JWT 또는 signed session token
+MCP별 권한 scope
+서버측 entitlement check
+로컬 에이전트 confirmation gate
+위험 작업 preview
+세션 종료 버튼
+rate limit
+IP/UA 이상징후 탐지</code></pre>
+<h3>10.3 MCP별 권한 예시</h3>
+<div class="doc-table-wrap"><table><tr><th>MCP</th><th>기본 권한</th><th>위험 권한</th><th>기본 정책</th></tr><tr><td>Office</td><td>현재 열린 문서 읽기·수정</td><td>파일 저장/덮어쓰기</td><td>저장 전 확인</td></tr><tr><td>CAD</td><td>현재 도면 정보 조회</td><td>도면 수정/저장</td><td>복사본 저장 권장</td></tr><tr><td>HWP</td><td>문서 생성·표 작성</td><td>원본 덮어쓰기</td><td>새 파일 우선</td></tr><tr><td>Photoshop</td><td>레이어 정보/간단 편집</td><td>원본 이미지 덮어쓰기</td><td>새 문서 저장</td></tr><tr><td>Blender</td><td>장면 조회/오브젝트 추가</td><td>외부 스크립트 실행</td><td>제한 필요</td></tr><tr><td>Local Code</td><td>프로젝트 읽기</td><td>코드 수정·명령 실행</td><td>개발자 전용</td></tr></table></div>
+<p>---</p>
+<h2>11. 참고 사이트 및 MCP 도구 정보 수집 계획</h2>
+<h3>11.1 수집 대상</h3>
+<ul><li>OpenCrab 사이트 구조</li><li>hero</li><li>architecture</li><li>workflow</li><li>target</li><li>use cases</li><li>pricing</li><li>terms/privacy/refunds</li></ul>
+<ul><li>로컬 <code>mcpworld</code> 문서</li><li>README</li><li>PRIVACY</li><li>MCP tool structure analysis</li><li>config.example</li><li>docs changelog</li></ul>
+<ul><li>MCP별 사용 시나리오</li><li>CAD level plan correction</li><li>PPT production review</li><li>price survey table</li><li>HWP document automation</li><li>Photoshop editing</li><li>Blender current scene editing</li></ul>
+<h3>11.2 도구 분류안</h3>
+<pre><code>tools/
+  office-ppt
+  office-excel
+  cad-drawing
+  hwp-document
+  photoshop-design
+  blender-visualization
+  local-code-dev</code></pre>
+<p>각 도구 문서에는 다음 파일을 둔다.</p>
+<pre><code>README.md
+capabilities.md
+security-scope.md
+sample-prompts.md
+pricing-fit.md
+privacy-risk.md</code></pre>
+<h3>11.3 OpenCrab 관련 범위</h3>
+<p>OpenCrab은 사이트 구조와 정책 페이지 배치 방식을 참고하는 대상으로만 사용한다. 본 SaaS 프로그램의 제공 MCP 목록에는 포함하지 않는다.</p>
+<p>현재는 <code>planning_required</code> 상태다.</p>
+<p>---</p>
+<h2>12. 기술 스택 제안</h2>
+<h3>12.1 MVP 정적 사이트</h3>
+<pre><code>HTML
+CSS
+Vanilla JS</code></pre>
+<p>장점:</p>
+<ul><li>빠르게 시안 제작 가능</li><li>배포 쉬움</li><li>디자인 방향 검증에 적합</li></ul>
+<h3>12.2 SaaS 실제 구현</h3>
+<pre><code>Frontend: Next.js 또는 SvelteKit
+Backend: FastAPI 또는 NestJS
+DB: PostgreSQL / Supabase
+Auth: Supabase Auth, Auth.js, Clerk 중 선택
+Billing: Paddle/Toss/Stripe hosted checkout
+Relay: nginx/Caddy + per-user tunnel broker
+Local Agent: Python 또는 Tauri Windows app
+Monitoring: Sentry + structured logs</code></pre>
+<h3>12.3 로컬 에이전트 구현 방향</h3>
+<p>1차는 기존 MCP World를 기반으로 한다.</p>
+<p>개선 방향:</p>
+<pre><code>mcpworld.pyw를 그대로 웹 SaaS에 붙이지 말고,
+Local Agent 기능을 분리한다.</code></pre>
+<p>분리할 모듈:</p>
+<pre><code>config_manager
+process_manager
+tunnel_manager
+mcp_service_manager
+permission_gate
+health_reporter</code></pre>
+<p>---</p>
+<h2>13. MVP 제작 순서</h2>
+<h3>13.1 1단계: 정적 랜딩 페이지</h3>
+<p>대상 파일:</p>
+<pre><code>index.html
+styles.css
+app.js</code></pre>
+<p>구현 내용:</p>
+<ul><li>OpenCrab 느낌의 dark/light 대응 레이아웃</li><li>Hero + architecture diagram</li><li>MCP tool cards</li><li>workflow timeline</li><li>pricing cards</li><li>security checklist</li><li>footer policy links</li></ul>
+<h3>13.2 2단계: 문서 페이지</h3>
+<pre><code>/docs/privacy-checklist.md
+/docs/payment-checklist.md
+/docs/mcp-tool-map.md
+/docs/local-agent-guide.md</code></pre>
+<h3>13.3 3단계: 대시보드 목업</h3>
+<pre><code>dashboard.html</code></pre>
+<p>포함 요소:</p>
+<ul><li>로그인 사용자 표시</li><li>구독 상태</li><li>로컬 에이전트 온라인/오프라인</li><li>MCP별 상태등</li><li>커넥터 URL 복사 버튼</li><li>세션 종료 버튼</li></ul>
+<h3>13.4 4단계: 실제 SaaS 전환</h3>
+<ul><li>Auth 붙이기</li><li>DB schema 작성</li><li>결제 checkout 붙이기</li><li>webhook으로 entitlement 갱신</li><li>local agent pairing flow 제작</li><li>tunnel broker 개발</li><li>per-user MCP route 발급</li><li>보안 테스트</li></ul>
+<p>---</p>
+<h2>14. DB 초안</h2>
+<pre><code>users
+  id
+  email
+  created_at
+
+subscriptions
+  id
+  user_id
+  provider
+  provider_customer_id
+  provider_subscription_id
+  plan_id
+  status
+  current_period_end
+
+local_agents
+  id
+  user_id
+  device_name
+  device_fingerprint_hash
+  last_seen_at
+  revoked_at
+
+mcp_sessions
+  id
+  user_id
+  agent_id
+  tool_id
+  public_route_hash
+  token_hash
+  status
+  expires_at
+  created_at
+  ended_at
+
+mcp_tools
+  id
+  name
+  category
+  risk_level
+  default_enabled
+
+usage_events
+  id
+  user_id
+  session_id
+  event_type
+  metadata_redacted
+  created_at</code></pre>
+<p>---</p>
+<h2>15. 약관 초안 방향</h2>
+<h3>15.1 서비스 약관 핵심 조항</h3>
+<ul><li>서비스 정의</li><li>로컬 에이전트와 MCP 연결의 위험 고지</li><li>사용자의 로컬 프로그램·파일 백업 책임</li><li>금지 행위</li><li>구독 결제와 자동갱신</li><li>환불 기준</li><li>서비스 중단과 제한</li><li>지식재산권</li><li>면책과 책임 제한</li><li>준거법과 분쟁 해결</li><li>문의처</li></ul>
+<h3>15.2 반드시 넣을 고지</h3>
+<pre><code>이 서비스는 사용자의 로컬 프로그램을 MCP를 통해 제어할 수 있습니다.
+AI 명령은 예상과 다르게 동작할 수 있으므로, 중요한 파일은 반드시 복사본으로 작업해야 합니다.</code></pre>
+<pre><code>사용자는 본인이 접근 권한을 가진 파일과 프로그램만 연결해야 합니다.</code></pre>
+<pre><code>회사는 사용자가 연결한 로컬 프로그램, 제3자 소프트웨어, AI 모델의 결과 정확성을 보장하지 않습니다.</code></pre>
+<p>---</p>
+<h2>16. 개인정보·결제 체크리스트</h2>
+<h3>16.1 공개 전 필수</h3>
+<ul><li>[ ] 개인정보 처리방침 작성</li><li>[ ] 서비스 약관 작성</li><li>[ ] 환불 정책 작성</li><li>[ ] 사업자 정보 표시</li><li>[ ] 결제 전 요금·자동갱신·환불 조건 표시</li><li>[ ] 결제 PG 약관 연결</li><li>[ ] 위탁 업체 목록 작성</li><li>[ ] 국외 이전 여부 확인</li><li>[ ] 로그 보관기간 결정</li><li>[ ] 계정 삭제 요청 절차 마련</li></ul>
+<h3>16.2 보안 필수</h3>
+<ul><li>[ ] HTTPS 강제</li><li>[ ] 사용자별 tunnel route</li><li>[ ] session token 만료</li><li>[ ] webhook signature 검증</li><li>[ ] rate limit</li><li>[ ] audit log redaction</li><li>[ ] 관리자 2FA</li><li>[ ] secret manager 사용</li><li>[ ] config.json 공개 금지</li><li>[ ] nginx 설정 공개 금지</li><li>[ ] 공개 레포 privacy scan</li></ul>
+<p>---</p>
+<h2>17. 샘플 사이트 첫 화면 문안</h2>
+<h3>Hero title</h3>
+<pre><code>ChatGPT 웹에서 로컬 CAD와 PowerPoint를 연결하세요.</code></pre>
+<h3>Hero subtitle</h3>
+<pre><code>MCP World는 복잡한 서버 실행, 포트, 터널, 커넥터 설정을 한곳에서 관리해 CAD·PPT·Excel·HWP 실무자가 브라우저에서 로컬 MCP를 쉽게 사용할 수 있게 돕습니다.</code></pre>
+<h3>CTA</h3>
+<pre><code>Start local MCP
+View setup guide</code></pre>
+<h3>Architecture caption</h3>
+<pre><code>ChatGPT -&gt; SaaS Gateway -&gt; Secure Tunnel -&gt; Local MCP -&gt; CAD / Office / HWP / Photoshop</code></pre>
+<h3>Security headline</h3>
+<pre><code>공개 URL이 아니라 사용자별 세션으로 연결합니다.</code></pre>
+<h3>Security body</h3>
+<pre><code>각 MCP 연결은 사용자 계정, 구독 권한, 세션 만료, 로컬 승인 절차를 통과해야 합니다. 작업이 끝나면 터널을 즉시 종료할 수 있습니다.</code></pre>
+<p>---</p>
+<h2>18. 바로 다음 작업 제안</h2>
+<p>아래 순서로 진행한다.</p>
+<ul><li><code>index.html</code>, <code>styles.css</code>, <code>app.js</code> 정적 랜딩 페이지 생성</li><li>OpenCrab과 유사한 섹션 배치 적용</li><li>MCP World 컨셉에 맞게 문구 전면 수정</li><li><code>/docs</code>에 개인정보·결제·보안 체크리스트 문서 생성</li><li>대시보드 목업 추가</li><li>실제 결제·인증·터널 기능은 별도 브랜치 또는 별도 프로젝트로 구현</li></ul>
+<p>---</p>
+<h2>19. 현 시점 결론</h2>
+<p>샘플 웹페이지는 단순한 “MCP 모음 사이트”가 아니라 “ChatGPT 웹브라우저에서 로컬 MCP를 안전하게 쓰게 해주는 SaaS 게이트웨이”로 잡아야 한다.</p>
+<p>가장 중요한 설계 원칙은 다음이다.</p>
+<pre><code>1. 로컬 MCP endpoint를 인증 없이 공개하지 않는다.
+2. 사용자별 세션과 구독 권한으로 라우팅한다.
+3. 결제 정보는 직접 저장하지 않는다.
+4. 로컬 파일 내용과 경로는 최소 수집·마스킹한다.
+5. CAD/PPT/HWP 같은 원본 파일 수정은 항상 복사본 저장과 사용자 확인을 우선한다.</code></pre>
+<p>이 원칙을 지키면 OpenCrab과 비슷한 SaaS 정보 구조를 참고하면서도, 본 서비스만의 핵심 차별점인 “브라우저 기반 로컬 MCP 연결”을 명확하게 보여줄 수 있다.</p>
+<p>---</p>
+<h2>20. 약관·동의 UI 추가 반영 사항</h2>
+<p>오픈소스 검토 결과와 국내 법령 점검 결과를 반영해 <code>docs</code> 폴더에 정책 문서를 추가한다.</p>
+<p>추가 문서:</p>
+<pre><code>docs/privacy-policy-outline.md
+docs/terms-and-policy-map.md
+docs/business-disclosure.md
+docs/consent-ui-plan.md
+docs/local-agent-risk-notice.md
+docs/data-retention-and-processing.md</code></pre>
+<p>핵심 반영 방향:</p>
+<ul><li>사업자 정보 고지 문서를 별도로 둔다.</li><li>처리방침 필수 항목을 체크리스트화한다.</li><li>로그인, 결제, 로컬 에이전트, 자동 수집 정보를 항목별로 분리한다.</li><li>필수 동의와 선택 동의를 분리한다.</li><li>쿠키 설정 범주를 나눈다.</li><li>로컬 에이전트 설치 전 별도 고지 화면을 둔다.</li><li>자동 판단 사용 여부는 조건부 고지 항목으로 관리한다.</li><li>회사 책임을 전부 배제하는 표현은 사용하지 않는다.</li></ul>
+    </article>
+  </main>
+</body>
+</html>

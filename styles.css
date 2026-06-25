@@ -202,6 +202,22 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 .admin-table th, .admin-table td { padding: 15px 16px; border-bottom: 1px solid var(--line); text-align: left; color: var(--muted); }
 .admin-table th { color: var(--text); font-size: 13px; background: rgba(255, 255, 255, 0.06); }
 .admin-table tr:last-child td { border-bottom: 0; }
+.doc-page { background: var(--bg); }
+.doc-shell { max-width: 920px; }
+.doc-content { display: grid; gap: 16px; color: var(--muted); line-height: 1.75; }
+.doc-content h1, .doc-content h2, .doc-content h3, .doc-content h4 { color: var(--text); margin-top: 18px; line-height: 1.2; }
+.doc-content h1 { font-size: 36px; }
+.doc-content h2 { font-size: 26px; }
+.doc-content h3 { font-size: 20px; }
+.doc-content a { color: var(--accent); }
+.doc-content ul { margin: 0; padding-left: 22px; }
+.doc-content code { color: var(--accent); background: rgba(86, 194, 163, 0.1); border: 1px solid var(--line); border-radius: 4px; padding: 1px 5px; }
+.doc-content pre { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; padding: 16px; background: rgba(0, 0, 0, 0.22); }
+.doc-content pre code { border: 0; padding: 0; background: transparent; }
+.doc-table-wrap { overflow-x: auto; border: 1px solid var(--line); border-radius: 8px; }
+.doc-content table { width: 100%; border-collapse: collapse; min-width: 620px; }
+.doc-content th, .doc-content td { padding: 12px 14px; border-bottom: 1px solid var(--line); text-align: left; vertical-align: top; }
+.doc-content th { color: var(--text); background: rgba(255, 255, 255, 0.06); }
 .status-warning, .event-status.warning { color: var(--warn) !important; }
 .event-status.success { color: var(--good) !important; }
 .event-status.error { color: var(--danger) !important; }
