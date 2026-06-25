@@ -1,4 +1,5 @@
 const ADMIN_AUTH_KEY = 'mcpworld_operator_unlocked';
+const ADMIN_EMAILS = new Set(['sky7823a@gmail.com']);
 
 const adminGate = document.querySelector('#adminGate');
 const adminContent = document.querySelector('#adminContent');
@@ -83,8 +84,28 @@ let logs = [
   { time: '09:28', type: 'admin', target: 'operator', message: 'operator console opened', status: 'success' }
 ];
 
+function getCurrentUser() {
+  try {
+    return JSON.parse(sessionStorage.getItem('mcpworld_demo_user') || '{}');
+  } catch {
+    return {};
+  }
+}
+
+function getCurrentUserEmail() {
+  return (getCurrentUser().email || '').toLowerCase();
+}
+
+function isCurrentAdmin() {
+  return ADMIN_EMAILS.has(getCurrentUserEmail());
+}
+
 async function getApi(path) {
-  const response = await fetch(`../api${path}`);
+  const separator = path.includes('?') ? '&' : '?';
+  const adminPath = `${path}${separator}email=${encodeURIComponent(getCurrentUserEmail())}`;
+  const response = await fetch(`../api${adminPath}`, {
+    headers: { 'X-MCPWorld-Admin-Email': getCurrentUserEmail() }
+  });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
   return data;
@@ -94,7 +115,7 @@ async function postApi(path, payload) {
   const response = await fetch(`../api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({ ...payload, actorEmail: getCurrentUserEmail() })
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
@@ -342,9 +363,27 @@ function lockAdmin() {
   adminGate?.classList.remove('hidden');
   adminLockButton?.classList.add('hidden');
   if (adminTokenInput) adminTokenInput.value = '';
+  if (!isCurrentAdmin()) {
+    if (adminTokenInput) adminTokenInput.disabled = true;
+    if (adminTokenSubmit) adminTokenSubmit.disabled = true;
+    if (adminTokenMessage) {
+      adminTokenMessage.textContent = '관리자 권한이 있는 계정으로 로그인해야 운영 콘솔을 열 수 있습니다.';
+      adminTokenMessage.classList.add('error');
+    }
+  } else {
+    if (adminTokenInput) adminTokenInput.disabled = false;
+    if (adminTokenSubmit) adminTokenSubmit.disabled = false;
+  }
 }
 
 adminTokenSubmit?.addEventListener('click', () => {
+  if (!isCurrentAdmin()) {
+    if (adminTokenMessage) {
+      adminTokenMessage.textContent = '관리자 권한이 없는 계정입니다.';
+      adminTokenMessage.classList.add('error');
+    }
+    return;
+  }
   const typedCode = adminTokenInput?.value.trim() || '';
   if (typedCode === getDemoAdminCode()) {
     if (adminTokenMessage) {
@@ -420,7 +459,7 @@ planSelect?.addEventListener('change', () => {
 riskSelect?.addEventListener('change', renderAll);
 userSearchInput?.addEventListener('input', renderUsers);
 
-if (sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
+if (isCurrentAdmin() && sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
   hydrateFromApi().finally(unlockAdmin);
 } else {
   lockAdmin();

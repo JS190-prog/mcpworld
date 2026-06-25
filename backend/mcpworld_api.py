@@ -19,6 +19,11 @@ PORT = int(os.environ.get("MCPWORLD_PORT", "33210"))
 TOKEN_TTL_SECONDS = int(os.environ.get("MCPWORLD_SESSION_TTL_SECONDS", "3600"))
 MCP_WAIT_SECONDS = float(os.environ.get("MCPWORLD_MCP_WAIT_SECONDS", "25"))
 PROXY_PUBLIC_BASE = os.environ.get("MCPWORLD_PROXY_PUBLIC_BASE", "").rstrip("/")
+ADMIN_EMAILS = {
+    email.strip().lower()
+    for email in os.environ.get("MCPWORLD_ADMIN_EMAILS", "sky7823a@gmail.com").split(",")
+    if email.strip()
+}
 
 
 CONNECTOR_CATALOG = [
@@ -122,6 +127,10 @@ def html_response(handler, status, body):
 
 def hash_secret(value: str) -> str:
     return hashlib.sha256(value.encode("utf-8")).hexdigest()
+
+
+def is_admin_email(email: str) -> bool:
+    return bool(email) and email.strip().lower() in ADMIN_EMAILS
 
 
 def get_db():
@@ -310,7 +319,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path == "/auth/google/callback":
                 return self.google_callback(query)
             if path == "/admin/bootstrap":
-                return self.admin_bootstrap()
+                return self.admin_bootstrap(query)
             if path == "/tools/catalog":
                 return json_response(self, 200, {"ok": True, "tools": TOOL_CATALOG})
             if path == "/mcp":
@@ -856,7 +865,26 @@ class ApiHandler(BaseHTTPRequestHandler):
             },
         )
 
-    def admin_bootstrap(self):
+    def admin_actor_email(self, query=None, body=None):
+        query = query or {}
+        body = body or {}
+        return (
+            (query.get("email") or [""])[0]
+            or self.headers.get("X-MCPWorld-Admin-Email", "")
+            or body.get("actorEmail", "")
+            or body.get("email", "")
+        ).strip().lower()
+
+    def require_admin(self, query=None, body=None):
+        actor = self.admin_actor_email(query, body)
+        if not is_admin_email(actor):
+            return None
+        return actor
+
+    def admin_bootstrap(self, query):
+        actor = self.require_admin(query=query)
+        if not actor:
+            return json_response(self, 403, {"ok": False, "error": "admin_forbidden"})
         with get_db() as db:
             users = [public_user(row) for row in db.execute("select * from users order by created_at desc").fetchall()]
             sessions = [dict(row) for row in db.execute("select * from sessions order by created_at desc limit 50").fetchall()]
@@ -869,6 +897,9 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def admin_action(self):
         body = read_body(self)
+        actor = self.require_admin(body=body)
+        if not actor:
+            return json_response(self, 403, {"ok": False, "error": "admin_forbidden"})
         action = body.get("action") or "unknown"
         target = body.get("target") or "system"
         with get_db() as db:
@@ -876,7 +907,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 db.execute("update users set status = 'limited', risk = 'warning' where email = ?", (target,))
             elif action == "terminate-session":
                 db.execute("update sessions set status = 'terminated', ended_at = ? where id = ?", (now(), target))
-            log_event(db, "operator", f"admin.{action}", target, "success", f"operator action: {action}")
+            log_event(db, actor, f"admin.{action}", target, "success", f"operator action: {action}")
         return json_response(self, 200, {"ok": True, "action": action, "target": target})
 
 

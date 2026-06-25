@@ -43,6 +43,7 @@ const fallbackUser = {
 const registeredTools = new Set();
 let currentSessionId = '';
 const connectorRoutes = new Map();
+const adminEmails = new Set(['sky7823a@gmail.com']);
 
 async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
@@ -119,6 +120,17 @@ function renderUser(user) {
   if (accountName) accountName.textContent = user.nickname;
   if (accountEmail) accountEmail.textContent = user.email;
   if (planName) planName.textContent = user.plan || 'Free Trial';
+}
+
+function isAdminUser(user) {
+  return adminEmails.has((user.email || '').toLowerCase());
+}
+
+function applyAdminAccess(user) {
+  const isAdmin = isAdminUser(user);
+  document.querySelectorAll('[data-admin-link]').forEach((link) => {
+    if (!isAdmin) link.remove();
+  });
 }
 
 function setAgentState() {
@@ -200,6 +212,7 @@ function renderConnectors(user) {
 
 const currentUser = getUser();
 renderUser(currentUser);
+applyAdminAccess(currentUser);
 setAgentState();
 loadConnectorLinks(currentUser).then(() => {
   renderConnectors(currentUser);
@@ -240,7 +253,7 @@ document.querySelectorAll('.dashboard-action').forEach((button) => {
   button.addEventListener('click', () => {
     button.textContent = '운영 API 연결 예정';
     const title = button.closest('.card')?.querySelector('h3')?.textContent;
-    if (title === '세션 전체 종료') {
+    if (title === '세션 전체 종료' && isAdminUser(currentUser)) {
       postApi('/admin/action', { action: 'terminate-user-sessions', target: currentUser.email }).catch(() => {});
     }
     setTimeout(() => {
