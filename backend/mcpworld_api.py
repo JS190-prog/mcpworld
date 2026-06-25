@@ -503,17 +503,20 @@ class ApiHandler(BaseHTTPRequestHandler):
         if not client_id:
             return json_response(self, 503, {"ok": False, "error": "needs_config", "missing": ["GOOGLE_CLIENT_ID"]})
         state = secrets.token_urlsafe(18)
-        params = urllib.parse.urlencode(
-            {
-                "client_id": client_id,
-                "redirect_uri": redirect_uri,
-                "response_type": "code",
-                "scope": "openid email profile",
-                "access_type": "offline",
-                "prompt": "consent",
-                "state": state,
-            }
-        )
+        params_data = {
+            "client_id": client_id,
+            "redirect_uri": redirect_uri,
+            "response_type": "code",
+            "scope": "openid email profile",
+            "state": state,
+        }
+        access_type = os.environ.get("GOOGLE_OAUTH_ACCESS_TYPE", "").strip()
+        prompt = os.environ.get("GOOGLE_OAUTH_PROMPT", "").strip()
+        if access_type:
+            params_data["access_type"] = access_type
+        if prompt:
+            params_data["prompt"] = prompt
+        params = urllib.parse.urlencode(params_data)
         return json_response(self, 200, {"ok": True, "url": f"https://accounts.google.com/o/oauth2/v2/auth?{params}", "state": state})
 
     def google_callback(self, query):
