@@ -1,5 +1,4 @@
 const ADMIN_AUTH_KEY = 'mcpworld_operator_unlocked';
-const ADMIN_EMAILS = new Set(['sky7823a@gmail.com']);
 
 const adminGate = document.querySelector('#adminGate');
 const adminContent = document.querySelector('#adminContent');
@@ -96,16 +95,8 @@ function getCurrentUserEmail() {
   return (getCurrentUser().email || '').toLowerCase();
 }
 
-function isCurrentAdmin() {
-  return ADMIN_EMAILS.has(getCurrentUserEmail());
-}
-
 async function getApi(path) {
-  const separator = path.includes('?') ? '&' : '?';
-  const adminPath = `${path}${separator}email=${encodeURIComponent(getCurrentUserEmail())}`;
-  const response = await fetch(`../api${adminPath}`, {
-    headers: { 'X-MCPWorld-Admin-Email': getCurrentUserEmail() }
-  });
+  const response = await fetch(`../api${path}`, { credentials: 'same-origin' });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
   return data;
@@ -115,15 +106,12 @@ async function postApi(path, payload) {
   const response = await fetch(`../api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ ...payload, actorEmail: getCurrentUserEmail() })
+    credentials: 'same-origin',
+    body: JSON.stringify(payload)
   });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
   return data;
-}
-
-function getDemoAdminCode() {
-  return ['mcpworld', 'admin', '2026'].join('-');
 }
 
 function numberWithComma(value) {
@@ -344,8 +332,9 @@ async function hydrateFromApi() {
         status: row.status
       }));
     }
-  } catch {
-    addAction('API 연결 실패. 정적 데모 데이터로 표시합니다.', 'warning');
+  } catch (error) {
+    addAction('관리자 API 접근이 거부되었습니다.', 'error');
+    throw error;
   }
 }
 
@@ -362,41 +351,31 @@ function lockAdmin() {
   adminContent?.classList.add('hidden');
   adminGate?.classList.remove('hidden');
   adminLockButton?.classList.add('hidden');
-  if (adminTokenInput) adminTokenInput.value = '';
-  if (!isCurrentAdmin()) {
-    if (adminTokenInput) adminTokenInput.disabled = true;
-    if (adminTokenSubmit) adminTokenSubmit.disabled = true;
+  if (adminTokenSubmit) adminTokenSubmit.disabled = false;
+}
+
+async function verifyAdminSession() {
+  if (adminTokenSubmit) adminTokenSubmit.disabled = true;
+  try {
+    await hydrateFromApi();
+    if (adminTokenMessage) {
+      adminTokenMessage.textContent = '관리자 세션 확인 완료. 운영 콘솔을 엽니다.';
+      adminTokenMessage.classList.remove('error');
+    }
+    unlockAdmin();
+  } catch {
     if (adminTokenMessage) {
       adminTokenMessage.textContent = '관리자 권한이 있는 계정으로 로그인해야 운영 콘솔을 열 수 있습니다.';
       adminTokenMessage.classList.add('error');
     }
-  } else {
-    if (adminTokenInput) adminTokenInput.disabled = false;
+    lockAdmin();
+  } finally {
     if (adminTokenSubmit) adminTokenSubmit.disabled = false;
   }
 }
 
 adminTokenSubmit?.addEventListener('click', () => {
-  if (!isCurrentAdmin()) {
-    if (adminTokenMessage) {
-      adminTokenMessage.textContent = '관리자 권한이 없는 계정입니다.';
-      adminTokenMessage.classList.add('error');
-    }
-    return;
-  }
-  const typedCode = adminTokenInput?.value.trim() || '';
-  if (typedCode === getDemoAdminCode()) {
-    if (adminTokenMessage) {
-      adminTokenMessage.textContent = '토큰 확인 완료. 운영 콘솔을 엽니다.';
-      adminTokenMessage.classList.remove('error');
-    }
-    unlockAdmin();
-    return;
-  }
-  if (adminTokenMessage) {
-    adminTokenMessage.textContent = '운영자 토큰이 올바르지 않습니다.';
-    adminTokenMessage.classList.add('error');
-  }
+  verifyAdminSession();
 });
 
 adminTokenInput?.addEventListener('keydown', (event) => {
@@ -459,8 +438,4 @@ planSelect?.addEventListener('change', () => {
 riskSelect?.addEventListener('change', renderAll);
 userSearchInput?.addEventListener('input', renderUsers);
 
-if (isCurrentAdmin() && sessionStorage.getItem(ADMIN_AUTH_KEY) === 'true') {
-  hydrateFromApi().finally(unlockAdmin);
-} else {
-  lockAdmin();
-}
+verifyAdminSession();

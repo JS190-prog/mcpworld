@@ -43,7 +43,6 @@ const fallbackUser = {
 const registeredTools = new Set();
 let currentSessionId = '';
 const connectorRoutes = new Map();
-const adminEmails = new Set(['sky7823a@gmail.com']);
 
 async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
@@ -122,14 +121,18 @@ function renderUser(user) {
   if (planName) planName.textContent = user.plan || 'Free Trial';
 }
 
-function isAdminUser(user) {
-  return adminEmails.has((user.email || '').toLowerCase());
-}
-
-function applyAdminAccess(user) {
-  const isAdmin = isAdminUser(user);
+async function applyAdminAccess() {
+  let isAdmin = false;
+  try {
+    const response = await fetch('api/auth/me', { credentials: 'same-origin' });
+    const data = await response.json().catch(() => ({}));
+    isAdmin = response.ok && data.ok === true && data.isAdmin === true;
+  } catch {
+    isAdmin = false;
+  }
   document.querySelectorAll('[data-admin-link]').forEach((link) => {
-    if (!isAdmin) link.remove();
+    if (isAdmin) link.hidden = false;
+    else link.remove();
   });
 }
 
@@ -212,7 +215,7 @@ function renderConnectors(user) {
 
 const currentUser = getUser();
 renderUser(currentUser);
-applyAdminAccess(currentUser);
+applyAdminAccess();
 setAgentState();
 loadConnectorLinks(currentUser).then(() => {
   renderConnectors(currentUser);
@@ -244,7 +247,12 @@ refreshConnectors?.addEventListener('click', async () => {
   }, 1400);
 });
 
-signOutButton?.addEventListener('click', () => {
+signOutButton?.addEventListener('click', async () => {
+  try {
+    await postApi('/auth/logout', {});
+  } catch {
+    // Local sign-out still clears the dashboard session marker.
+  }
   sessionStorage.removeItem('mcpworld_demo_user');
   window.location.href = 'index.html';
 });
@@ -253,9 +261,6 @@ document.querySelectorAll('.dashboard-action').forEach((button) => {
   button.addEventListener('click', () => {
     button.textContent = '운영 API 연결 예정';
     const title = button.closest('.card')?.querySelector('h3')?.textContent;
-    if (title === '세션 전체 종료' && isAdminUser(currentUser)) {
-      postApi('/admin/action', { action: 'terminate-user-sessions', target: currentUser.email }).catch(() => {});
-    }
     setTimeout(() => {
       if (button.closest('.card')?.querySelector('h3')?.textContent === '세션 전체 종료') button.textContent = '세션 종료';
       if (button.closest('.card')?.querySelector('h3')?.textContent === '결제 포털') button.textContent = '결제 관리';

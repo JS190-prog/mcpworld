@@ -9,6 +9,7 @@ import sqlite3
 import time
 import urllib.parse
 import urllib.request
+from http import cookies
 from http.server import BaseHTTPRequestHandler, ThreadingHTTPServer
 from pathlib import Path
 
@@ -19,6 +20,9 @@ PORT = int(os.environ.get("MCPWORLD_PORT", "33210"))
 TOKEN_TTL_SECONDS = int(os.environ.get("MCPWORLD_SESSION_TTL_SECONDS", "3600"))
 MCP_WAIT_SECONDS = float(os.environ.get("MCPWORLD_MCP_WAIT_SECONDS", "25"))
 PROXY_PUBLIC_BASE = os.environ.get("MCPWORLD_PROXY_PUBLIC_BASE", "").rstrip("/")
+LOGIN_TTL_SECONDS = int(os.environ.get("MCPWORLD_LOGIN_TTL_SECONDS", "604800"))
+SESSION_SECRET = os.environ.get("MCPWORLD_SESSION_SECRET", "dev-insecure-change-me")
+AUTH_COOKIE_NAME = "mcpworld_session"
 ADMIN_EMAILS = {
     email.strip().lower()
     for email in os.environ.get("MCPWORLD_ADMIN_EMAILS", "sky7823a@gmail.com").split(",")
@@ -105,21 +109,25 @@ def now() -> int:
     return int(time.time())
 
 
-def json_response(handler, status, payload):
+def json_response(handler, status, payload, extra_headers=None):
     body = json.dumps(payload, ensure_ascii=False).encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "application/json; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
+    for name, value in extra_headers or []:
+        handler.send_header(name, value)
     handler.send_header("Content-Length", str(len(body)))
     handler.end_headers()
     handler.wfile.write(body)
 
 
-def html_response(handler, status, body):
+def html_response(handler, status, body, extra_headers=None):
     encoded = body.encode("utf-8")
     handler.send_response(status)
     handler.send_header("Content-Type", "text/html; charset=utf-8")
     handler.send_header("Cache-Control", "no-store")
+    for name, value in extra_headers or []:
+        handler.send_header(name, value)
     handler.send_header("Content-Length", str(len(encoded)))
     handler.end_headers()
     handler.wfile.write(encoded)
@@ -131,6 +139,45 @@ def hash_secret(value: str) -> str:
 
 def is_admin_email(email: str) -> bool:
     return bool(email) and email.strip().lower() in ADMIN_EMAILS
+
+
+def cookie_path() -> str:
+    return urllib.parse.urlparse(APP_ROOT).path or "/"
+
+
+def sign_auth_session(user_id: str) -> str:
+    issued_at = str(now())
+    payload = f"{user_id}.{issued_at}"
+    signature = hmac.new(SESSION_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
+    encoded_sig = base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+    return f"{payload}.{encoded_sig}"
+
+
+def verify_auth_session(value: str):
+    try:
+        user_id, issued_at, signature = value.split(".", 2)
+        payload = f"{user_id}.{issued_at}"
+        expected = hmac.new(SESSION_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
+        padded = signature + "=" * (-len(signature) % 4)
+        actual = base64.urlsafe_b64decode(padded.encode("ascii"))
+        if not hmac.compare_digest(expected, actual):
+            return None
+        if now() - int(issued_at) > LOGIN_TTL_SECONDS:
+            return None
+        return user_id
+    except Exception:
+        return None
+
+
+def auth_cookie_header(user_id: str) -> str:
+    return (
+        f"{AUTH_COOKIE_NAME}={sign_auth_session(user_id)}; "
+        f"Path={cookie_path()}; Max-Age={LOGIN_TTL_SECONDS}; HttpOnly; Secure; SameSite=Lax"
+    )
+
+
+def clear_auth_cookie_header() -> str:
+    return f"{AUTH_COOKIE_NAME}=; Path={cookie_path()}; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
 
 
 def get_db():
@@ -318,6 +365,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.google_url()
             if path == "/auth/google/callback":
                 return self.google_callback(query)
+            if path == "/auth/me":
+                return self.auth_me()
             if path == "/admin/bootstrap":
                 return self.admin_bootstrap(query)
             if path == "/tools/catalog":
@@ -344,6 +393,8 @@ class ApiHandler(BaseHTTPRequestHandler):
                 return self.signup()
             if path == "/auth/login":
                 return self.login()
+            if path == "/auth/logout":
+                return json_response(self, 200, {"ok": True}, extra_headers=[("Set-Cookie", clear_auth_cookie_header())])
             if path == "/billing/checkout":
                 return self.checkout()
             if path == "/billing/webhook":
@@ -598,7 +649,8 @@ class ApiHandler(BaseHTTPRequestHandler):
     window.location.replace({json.dumps(dashboard_url)});
   </script>
 </body>
-</html>""",
+    </html>""",
+            extra_headers=[("Set-Cookie", auth_cookie_header(user["id"]))],
         )
 
     def signup(self):
@@ -622,7 +674,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             except sqlite3.IntegrityError:
                 return json_response(self, 409, {"ok": False, "error": "email_exists"})
             row = db.execute("select * from users where id = ?", (user_id,)).fetchone()
-        return json_response(self, 200, {"ok": True, "user": public_user(row)})
+        return json_response(self, 200, {"ok": True, "user": public_user(row)}, extra_headers=[("Set-Cookie", auth_cookie_header(row["id"]))])
 
     def login(self):
         body = read_body(self)
@@ -638,7 +690,7 @@ class ApiHandler(BaseHTTPRequestHandler):
             db.execute("update users set last_seen_at = ? where id = ?", (now(), row["id"]))
             log_event(db, row["email"], "auth.login", row["id"], "success", "login success")
             row = db.execute("select * from users where id = ?", (row["id"],)).fetchone()
-        return json_response(self, 200, {"ok": True, "user": public_user(row)})
+        return json_response(self, 200, {"ok": True, "user": public_user(row)}, extra_headers=[("Set-Cookie", auth_cookie_header(row["id"]))])
 
     def checkout(self):
         body = read_body(self)
@@ -868,24 +920,33 @@ class ApiHandler(BaseHTTPRequestHandler):
             },
         )
 
-    def admin_actor_email(self, query=None, body=None):
-        query = query or {}
-        body = body or {}
-        return (
-            (query.get("email") or [""])[0]
-            or self.headers.get("X-MCPWorld-Admin-Email", "")
-            or body.get("actorEmail", "")
-            or body.get("email", "")
-        ).strip().lower()
-
-    def require_admin(self, query=None, body=None):
-        actor = self.admin_actor_email(query, body)
-        if not is_admin_email(actor):
+    def auth_user(self):
+        jar = cookies.SimpleCookie(self.headers.get("Cookie", ""))
+        morsel = jar.get(AUTH_COOKIE_NAME)
+        if not morsel:
             return None
-        return actor
+        user_id = verify_auth_session(morsel.value)
+        if not user_id:
+            return None
+        with get_db() as db:
+            row = db.execute("select * from users where id = ?", (user_id,)).fetchone()
+            return dict(row) if row else None
+
+    def auth_me(self):
+        user = self.auth_user()
+        if not user:
+            return json_response(self, 401, {"ok": False, "error": "not_authenticated"})
+        public = public_user(user)
+        return json_response(self, 200, {"ok": True, "user": public, "isAdmin": is_admin_email(user["email"])})
+
+    def require_admin(self):
+        user = self.auth_user()
+        if not user or not is_admin_email(user["email"]):
+            return None
+        return user
 
     def admin_bootstrap(self, query):
-        actor = self.require_admin(query=query)
+        actor = self.require_admin()
         if not actor:
             return json_response(self, 403, {"ok": False, "error": "admin_forbidden"})
         with get_db() as db:
@@ -900,7 +961,7 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def admin_action(self):
         body = read_body(self)
-        actor = self.require_admin(body=body)
+        actor = self.require_admin()
         if not actor:
             return json_response(self, 403, {"ok": False, "error": "admin_forbidden"})
         action = body.get("action") or "unknown"
@@ -910,7 +971,7 @@ class ApiHandler(BaseHTTPRequestHandler):
                 db.execute("update users set status = 'limited', risk = 'warning' where email = ?", (target,))
             elif action == "terminate-session":
                 db.execute("update sessions set status = 'terminated', ended_at = ? where id = ?", (now(), target))
-            log_event(db, actor, f"admin.{action}", target, "success", f"operator action: {action}")
+            log_event(db, actor["email"], f"admin.{action}", target, "success", f"operator action: {action}")
         return json_response(self, 200, {"ok": True, "action": action, "target": target})
 
 
