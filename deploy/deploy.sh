@@ -31,9 +31,12 @@ fail() { printf '\nERROR: %s\n' "$*" >&2; exit 1; }
 
 # Never deploy these (vcs/venv/build/test/db/secret artifacts).
 EXCLUDES=(
-  --exclude='./.git' --exclude='./.venv' --exclude='./venv'
+  --exclude='./.git' --exclude='./.gitignore' --exclude='./.github'
+  --exclude='./.venv' --exclude='./venv'
   --exclude='./dist' --exclude='./local_artifacts' --exclude='./.test-tmp' --exclude='./.pytest_cache'
-  --exclude='*.tmp'
+  --exclude='./installer' --exclude='./tests'
+  --exclude='*.tmp' --exclude='*.tar.gz' --exclude='*.bak' --exclude='*.bak-*'
+  --exclude='./write_test.txt'
   --exclude='*__pycache__*' --exclude='*.pyc'
   --exclude='*/node_modules' --exclude='*/.wrangler'
   --exclude='*.sqlite3' --exclude='*.sqlite3-*'
