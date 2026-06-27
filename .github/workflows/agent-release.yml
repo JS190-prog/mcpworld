@@ -66,4 +66,4 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          gh release upload '${{ steps.version.outputs.tag }}' dist/agent-release/MCPWorld-Agent-Setup.exe dist/agent-release/MCPWorld-Agent-Setup.msi dist/agent-release/latest.json dist/agent-release/SHA256SUMS.txt --repo '${{ github.repository }}' --clobber
+          gh release upload '${{ steps.version.outputs.tag }}' dist/agent-release/MCPWorld-Agent-Setup.exe dist/agent-release/MCPWorld-Agent-Setup.msi --repo '${{ github.repository }}' --clobber
