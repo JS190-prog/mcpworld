@@ -1,0 +1,62 @@
+<!doctype html>
+<html lang="ko">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>MCP World 문의 폼 구성 | MCP World</title>
+  <link rel="stylesheet" href="../styles.css">
+</head>
+<body class="doc-page">
+  <header class="site-header">
+    <nav class="nav" aria-label="문서 메뉴">
+      <a class="brand" href="../index.html" aria-label="MCP World 홈">
+        <span class="brand-mark">MW</span>
+        <span>MCP World</span>
+      </a>
+      <div class="nav-actions">
+        <a class="btn btn-ghost" href="../index.html">홈</a>
+        <a class="btn btn-secondary" href="../dashboard.html">대시보드</a>
+      </div>
+    </nav>
+  </header>
+  <main class="section doc-shell">
+    <article class="doc-content">
+      <h1>MCP World 문의 폼 구성</h1>
+      <p>Google Form 생성 권한이 준비되면 아래 항목으로 폼을 만들고, 공유 링크를 <code>site-config.js</code>의 <code>supportForm</code> 값에 넣으면 메인 사이트의 문의 버튼이 바로 연결됩니다.</p>
+      <p>자동 생성을 원하면 <a href="mcpworld-support-form-create-script.js">Google Apps Script 생성 스크립트</a>를 새 Apps Script 프로젝트에 붙여 넣고 실행하세요.</p>
+
+      <h2>폼 제목</h2>
+      <p>MCP World 설치/연결 문의</p>
+
+      <h2>폼 설명</h2>
+      <p>GitHub 계정이 없어도 MCP World 설치, 로그인, Agent 연결, 도구 호출 문제를 보낼 수 있는 문의 폼입니다.</p>
+
+      <h2>질문 항목</h2>
+      <div class="doc-table-wrap">
+        <table>
+          <tr><th>질문</th><th>유형</th><th>필수</th></tr>
+          <tr><td>이메일 주소</td><td>단답형</td><td>예</td></tr>
+          <tr><td>이름 또는 닉네임</td><td>단답형</td><td>아니오</td></tr>
+          <tr><td>문의 유형</td><td>객관식: 설치 문제, 로그인 문제, Agent 연결, MCP 도구 호출, 결제/플랜, 기능 제안, 기타</td><td>예</td></tr>
+          <tr><td>사용 중인 OS</td><td>객관식: Windows 11, Windows 10, 기타</td><td>예</td></tr>
+          <tr><td>문제가 발생한 도구</td><td>체크박스: Word, PowerPoint, Excel, CAD/ZWCAD, HWP, Photoshop, Blender, Local Code, OpenCrab, 해당 없음</td><td>아니오</td></tr>
+          <tr><td>문제 설명</td><td>장문형</td><td>예</td></tr>
+          <tr><td>오류 메시지 또는 화면 내용</td><td>장문형</td><td>아니오</td></tr>
+          <tr><td>재현 단계</td><td>장문형</td><td>아니오</td></tr>
+          <tr><td>첨부 파일 링크</td><td>단답형</td><td>아니오</td></tr>
+          <tr><td>개인정보 처리 동의</td><td>체크박스: 문의 응대를 위해 입력 정보를 확인하는 데 동의합니다.</td><td>예</td></tr>
+        </table>
+      </div>
+
+      <h2>권장 설정</h2>
+      <ul>
+        <li>응답 수집: 사용</li>
+        <li>이메일 주소 수집: 사용</li>
+        <li>응답 수정 허용: 선택</li>
+        <li>파일 업로드 질문: 사용하지 않음</li>
+        <li>응답은 Google Sheets로 연결</li>
+      </ul>
+    </article>
+  </main>
+</body>
+</html>

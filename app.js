@@ -18,6 +18,7 @@ function applyExternalLinks() {
   const mappings = [
     ['.github-repo-link', links.githubRepo],
     ['.github-release-link', links.githubReleases],
+    ['.support-form-link', links.supportForm],
     ['.github-issues-link', links.githubIssues],
     ['.github-discussions-link', links.githubDiscussions]
   ];
@@ -105,6 +106,16 @@ function resetSignupForm() {
   }
 }
 
+function resetLoginForm() {
+  [loginUser, loginPass].forEach((input) => {
+    if (input) input.value = '';
+  });
+  if (loginMessage) {
+    loginMessage.textContent = '';
+    loginMessage.classList.remove('error');
+  }
+}
+
 function normalizeUser(user) {
   if (!user) return null;
   return {
@@ -148,7 +159,9 @@ document.querySelectorAll('.open-login').forEach((button) => {
       goToDashboard(user);
       return;
     }
+    resetLoginForm();
     openDialog(loginDialog);
+    window.setTimeout(resetLoginForm, 50);
   });
 });
 

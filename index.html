@@ -143,11 +143,12 @@
 
     <section id="support" class="section">
       <p class="eyebrow">Download & Support</p>
-      <h2>설치 파일과 업데이트는 GitHub Releases에서 받을 수 있습니다.</h2>
+      <h2>설치와 문의는 누구나 접근하기 쉽게 나눠서 운영합니다.</h2>
       <div class="cards support-cards">
         <article class="card"><span class="tag">Download</span><h3>Agent 설치</h3><p>사용자용 설치 파일은 GitHub Releases에서 내려받을 수 있습니다.</p><a class="btn btn-primary github-release-link" href="https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1" target="_blank" rel="noopener">설치 파일 받기</a></article>
-        <article class="card"><span class="tag">Guide</span><h3>사용 질문</h3><p>설치, 로그인, MCP 연결 질문은 GitHub Discussions에서 확인합니다.</p><a class="btn btn-secondary github-discussions-link" href="https://github.com/JS190-prog/mcpworld/discussions" target="_blank" rel="noopener">Q&amp;A 보기</a></article>
-        <article class="card"><span class="tag">Bug</span><h3>문제 제보</h3><p>설치 실패, 연결 오류, 도구 호출 문제는 GitHub Issues에 남길 수 있습니다.</p><a class="btn btn-secondary github-issues-link" href="https://github.com/JS190-prog/mcpworld/issues" target="_blank" rel="noopener">이슈 등록</a></article>
+        <article class="card"><span class="tag">Contact</span><h3>문의하기</h3><p>GitHub 계정이 없어도 설치, 로그인, MCP 연결 질문을 보낼 수 있습니다.</p><a class="btn btn-primary support-form-link" href="docs/mcpworld-support-form-template.html" target="_blank" rel="noopener">문의 폼 열기</a></article>
+        <article class="card"><span class="tag">Developer</span><h3>개발자 Q&amp;A</h3><p>공개 토론과 기술 질문은 GitHub Discussions에서 이어갑니다. GitHub 로그인이 필요합니다.</p><a class="btn btn-secondary github-discussions-link" href="https://github.com/JS190-prog/mcpworld/discussions" target="_blank" rel="noopener">Discussions</a></article>
+        <article class="card"><span class="tag">Issue</span><h3>버그 추적</h3><p>재현 가능한 오류와 개선 요청은 GitHub Issues에서 추적합니다. GitHub 로그인이 필요합니다.</p><a class="btn btn-secondary github-issues-link" href="https://github.com/JS190-prog/mcpworld/issues" target="_blank" rel="noopener">Issues</a></article>
       </div>
     </section>
 
@@ -173,8 +174,8 @@
     <form method="dialog" class="modal-box">
       <button class="modal-close" type="button" aria-label="닫기">×</button>
       <h2>로그인</h2>
-      <label>이메일<input id="loginUser" type="email" autocomplete="username"></label>
-      <label>비밀번호<input id="loginPass" type="password" autocomplete="current-password"></label>
+      <label>이메일<input id="loginUser" type="email" autocomplete="off" autocapitalize="none" spellcheck="false" value=""></label>
+      <label>비밀번호<input id="loginPass" type="password" autocomplete="new-password" value=""></label>
       <p class="form-message" id="loginMessage" role="status"></p>
       <button class="btn btn-primary full" id="googleLoginButton" type="button">Google로 로그인</button>
       <div class="divider">또는</div>
@@ -216,6 +217,6 @@
   </dialog>
 
   <script src="site-config.js"></script>
-  <script src="app.js?v=20260628-signup-consent-links"></script>
+  <script src="app.js?v=20260628-login-autofill-reset"></script>
 </body>
 </html>
