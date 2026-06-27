@@ -19,6 +19,12 @@ const issueDetail = document.querySelector('#issueDetail');
 const userTableBody = document.querySelector('#userTable tbody');
 const sessionTableBody = document.querySelector('#sessionTable tbody');
 const logTableBody = document.querySelector('#logTable tbody');
+const toolHealthTableBody = document.querySelector('#toolHealthTable tbody');
+const adminTokenTableBody = document.querySelector('#adminTokenTable tbody');
+const adminTokenNameInput = document.querySelector('#adminTokenName');
+const adminTokenRoleSelect = document.querySelector('#adminTokenRole');
+const createAdminTokenButton = document.querySelector('#createAdminTokenButton');
+const newAdminTokenBox = document.querySelector('#newAdminTokenBox');
 const actionFeed = document.querySelector('#actionFeed');
 const adminToast = document.querySelector('#adminToast');
 
@@ -29,71 +35,26 @@ const kpiIssues = document.querySelector('#kpiIssues');
 const kpiErrorRate = document.querySelector('#kpiErrorRate');
 const kpiRelay = document.querySelector('#kpiRelay');
 
-const users = [
-  { id: 'u-1001', name: '데모 사용자', email: 'demo@mcpworld.local', plan: 'Pro', status: 'active', lastSeen: '2분 전', risk: 'normal', sessions: 3 },
-  { id: 'u-1017', name: 'Flow Studio', email: 'ops@flowstudio.kr', plan: 'Team', status: 'active', lastSeen: '5분 전', risk: 'warning', sessions: 12 },
-  { id: 'u-1024', name: 'CAD 검토자', email: 'cad24@example.com', plan: 'Pro', status: 'limited', lastSeen: '11분 전', risk: 'critical', sessions: 9 },
-  { id: 'u-1033', name: '문서 자동화', email: 'hwpdesk@example.com', plan: 'Starter', status: 'active', lastSeen: '28분 전', risk: 'normal', sessions: 1 },
-  { id: 'u-1040', name: '결제 확인 필요', email: 'billing40@example.com', plan: 'Studio', status: 'billing_hold', lastSeen: '1시간 전', risk: 'warning', sessions: 0 }
-];
-
-const sessions = [
-  { id: 'ses-cad-82a', user: 'cad24@example.com', tool: 'CAD / ZWCAD', status: 'active', relay: '780ms', expires: '14분', risk: 'critical' },
-  { id: 'ses-ppt-11f', user: 'ops@flowstudio.kr', tool: 'PowerPoint', status: 'active', relay: '210ms', expires: '42분', risk: 'warning' },
-  { id: 'ses-xls-7c2', user: 'demo@mcpworld.local', tool: 'Excel', status: 'active', relay: '80ms', expires: '55분', risk: 'normal' },
-  { id: 'ses-hwp-6d9', user: 'hwpdesk@example.com', tool: 'HWP', status: 'idle', relay: '120ms', expires: '8분', risk: 'warning' },
-  { id: 'ses-blend-40e', user: 'demo@mcpworld.local', tool: 'Blender', status: 'active', relay: '95ms', expires: '65분', risk: 'normal' }
-];
-
-const issues = [
-  {
-    id: 'inc-2401',
-    title: 'CAD relay 지연 증가',
-    severity: 'critical',
-    owner: 'cad24@example.com',
-    impact: 'CAD/ZWCAD 세션 3개에서 700ms 이상 지연',
-    cause: '사용자별 tunnel broker 재시작 필요 가능성',
-    action: 'Relay 재시작 또는 해당 사용자 세션 종료'
-  },
-  {
-    id: 'inc-2402',
-    title: '결제 웹훅 재시도 필요',
-    severity: 'warning',
-    owner: 'billing40@example.com',
-    impact: 'Studio 구독 상태가 billing_hold로 남음',
-    cause: 'PG webhook 서명 검증 후 DB 갱신 실패',
-    action: '웹훅 재처리 큐 이동'
-  },
-  {
-    id: 'inc-2403',
-    title: '인증 실패 반복',
-    severity: 'warning',
-    owner: 'ops@flowstudio.kr',
-    impact: '최근 10분간 관리자/사용자 인증 실패 7회',
-    cause: '잘못된 토큰 또는 자동화된 재시도',
-    action: '계정 임시 제한 또는 MFA 재설정 안내'
-  }
-];
-
-let logs = [
-  { time: '09:42', type: 'relay', target: 'ses-cad-82a', message: 'CAD relay latency above 700ms', status: 'warning' },
-  { time: '09:39', type: 'billing', target: 'billing40@example.com', message: 'subscription webhook retry required', status: 'warning' },
-  { time: '09:35', type: 'auth', target: 'ops@flowstudio.kr', message: 'repeated login failure detected', status: 'error' },
-  { time: '09:31', type: 'session', target: 'ses-hwp-6d9', message: 'idle session close to expiry', status: 'warning' },
-  { time: '09:28', type: 'admin', target: 'operator', message: 'operator console opened', status: 'success' }
-];
-
-function getCurrentUser() {
-  try {
-    return JSON.parse(sessionStorage.getItem('mcpworld_demo_user') || '{}');
-  } catch {
-    return {};
-  }
-}
-
-function getCurrentUserEmail() {
-  return (getCurrentUser().email || '').toLowerCase();
-}
+const users = [];
+const sessions = [];
+const issues = [];
+const toolHealth = [];
+const adminTokens = [];
+let logs = [];
+let actionRows = [];
+const planOptions = ['Free', 'Pro', 'Expert', 'Admin'];
+let summary = {
+  users: 0,
+  activeSessions: 0,
+  issuedToday: 0,
+  issues: 0,
+  errorRate: 0,
+  relay: 'normal'
+};
+let adminCapabilities = {
+  role: null,
+  canMutate: false
+};
 
 async function getApi(path) {
   const response = await fetch(`../api${path}`, { credentials: 'same-origin' });
@@ -115,24 +76,54 @@ async function postApi(path, payload) {
 }
 
 function numberWithComma(value) {
-  return new Intl.NumberFormat('ko-KR').format(value);
+  return new Intl.NumberFormat('ko-KR').format(Number(value || 0));
 }
 
 function severityLabel(value) {
-  return { critical: '긴급', warning: '주의', normal: '정상' }[value] || value;
+  return { critical: 'Critical', warning: 'Warning', normal: 'Normal' }[value] || value || '-';
 }
 
 function statusLabel(value) {
   return {
-    active: '활성',
-    limited: '제한',
-    billing_hold: '결제 보류',
-    idle: '유휴',
-    terminated: '종료',
-    success: '정상',
-    warning: '주의',
-    error: '오류'
-  }[value] || value;
+    active: 'Active',
+    limited: 'Limited',
+    billing_hold: 'Billing hold',
+    idle: 'Idle',
+    terminated: 'Terminated',
+    success: 'Success',
+    warning: 'Warning',
+    error: 'Error',
+    queued: 'Queued',
+    running: 'Running',
+    revoked: 'Revoked',
+    ready: 'Ready',
+    no_calls: 'No calls',
+    stale: 'Stale',
+    busy: 'Busy',
+    needs_setup: 'Needs setup'
+  }[value] || value || '-';
+}
+
+function mutationAttrs() {
+  return adminCapabilities.canMutate ? '' : ' disabled title="Read-only operator account"';
+}
+
+function escapeSelector(value) {
+  if (window.CSS?.escape) return CSS.escape(value);
+  return String(value).replace(/["\\]/g, '\\$&');
+}
+
+function renderPlanSelect(user) {
+  const options = planOptions.map((plan) => {
+    const selected = plan.toLowerCase() === (user.plan || '').toLowerCase() ? ' selected' : '';
+    return `<option value="${plan}"${selected}>${plan}</option>`;
+  }).join('');
+  return `
+    <div class="inline-control">
+      <select data-plan-for="${user.email}"${mutationAttrs()}>${options}</select>
+      <button class="btn btn-secondary" data-action="set-plan" data-user="${user.email}" type="button"${mutationAttrs()}>Apply</button>
+    </div>
+  `;
 }
 
 function showToast(message) {
@@ -143,12 +134,18 @@ function showToast(message) {
 }
 
 function addAction(message, status = 'success') {
-  const now = new Date();
-  const time = now.toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' });
-  logs = [{ time, type: 'admin', target: 'operator', message, status }, ...logs];
-  renderLogs();
-  renderActionFeed();
+  if (status === 'error') {
+    console.error(message);
+  }
   showToast(message);
+}
+
+function formatDateTime(seconds) {
+  return seconds ? new Date(seconds * 1000).toLocaleString('ko-KR') : '-';
+}
+
+function formatTime(seconds) {
+  return seconds ? new Date(seconds * 1000).toLocaleTimeString('ko-KR') : '-';
 }
 
 function getVisibleIssues() {
@@ -158,20 +155,23 @@ function getVisibleIssues() {
 
 function renderKpis() {
   const visibleIssues = getVisibleIssues();
-  const activeSessions = sessions.filter((session) => session.status === 'active').length;
-  const warnings = issues.filter((issue) => issue.severity !== 'normal').length;
-  if (kpiUsers) kpiUsers.textContent = numberWithComma(users.length);
-  if (kpiSessions) kpiSessions.textContent = numberWithComma(activeSessions);
-  if (kpiConnectors) kpiConnectors.textContent = numberWithComma(641);
-  if (kpiIssues) kpiIssues.textContent = numberWithComma(visibleIssues.length);
-  if (kpiErrorRate) kpiErrorRate.textContent = warnings >= 3 ? '2.8%' : '1.1%';
-  if (kpiRelay) kpiRelay.textContent = issues.some((issue) => issue.severity === 'critical') ? '주의' : '정상';
+  if (kpiUsers) kpiUsers.textContent = numberWithComma(summary.users ?? users.length);
+  if (kpiSessions) kpiSessions.textContent = numberWithComma(summary.activeSessions ?? 0);
+  if (kpiConnectors) kpiConnectors.textContent = numberWithComma(summary.issuedToday ?? 0);
+  if (kpiIssues) kpiIssues.textContent = numberWithComma(summary.issues ?? visibleIssues.length);
+  if (kpiErrorRate) kpiErrorRate.textContent = `${summary.errorRate ?? 0}%`;
+  if (kpiRelay) kpiRelay.textContent = summary.relay || 'normal';
 }
 
 function renderIssues(selectedId = issues[0]?.id) {
   if (!issueList) return;
   const visibleIssues = getVisibleIssues();
   issueList.innerHTML = '';
+  if (!visibleIssues.length) {
+    issueList.innerHTML = '<p class="muted">No active operational issues.</p>';
+    if (issueDetail) issueDetail.innerHTML = '<p class="muted">Live checks are clear.</p>';
+    return;
+  }
   visibleIssues.forEach((issue) => {
     const button = document.createElement('button');
     button.type = 'button';
@@ -196,15 +196,15 @@ function renderIssueDetail(issueId) {
     <p class="eyebrow">Selected Issue</p>
     <h3>${issue.title}</h3>
     <dl class="ops-definition">
-      <dt>위험도</dt><dd>${severityLabel(issue.severity)}</dd>
-      <dt>대상</dt><dd>${issue.owner}</dd>
-      <dt>영향</dt><dd>${issue.impact}</dd>
-      <dt>원인 추정</dt><dd>${issue.cause}</dd>
-      <dt>권장 조치</dt><dd>${issue.action}</dd>
+      <dt>Severity</dt><dd>${severityLabel(issue.severity)}</dd>
+      <dt>Owner</dt><dd>${issue.owner}</dd>
+      <dt>Impact</dt><dd>${issue.impact}</dd>
+      <dt>Likely Cause</dt><dd>${issue.cause}</dd>
+      <dt>Suggested Action</dt><dd>${issue.action}</dd>
     </dl>
     <div class="ops-actions">
-      <button class="btn btn-primary" data-action="resolve-issue" data-issue="${issue.id}" type="button">조치 완료</button>
-      <button class="btn btn-secondary" data-action="open-user" data-owner="${issue.owner}" type="button">사용자 찾기</button>
+      <button class="btn btn-primary" data-action="resolve-issue" data-issue="${issue.id}" type="button">Mark reviewed</button>
+      <button class="btn btn-secondary" data-action="open-user" data-owner="${issue.owner}" type="button">Find owner</button>
     </div>
   `;
 }
@@ -214,7 +214,7 @@ function renderUsers() {
   const query = (userSearchInput?.value || '').trim().toLowerCase();
   const plan = planSelect?.value || 'all';
   const rows = users.filter((user) => {
-    const planMatch = plan === 'all' || user.plan.toLowerCase() === plan;
+    const planMatch = plan === 'all' || (user.plan || '').toLowerCase() === plan;
     const queryMatch = !query || `${user.name} ${user.email} ${user.plan}`.toLowerCase().includes(query);
     return planMatch && queryMatch;
   });
@@ -223,14 +223,13 @@ function renderUsers() {
     const tr = document.createElement('tr');
     tr.innerHTML = `
       <td><strong>${user.name}</strong><br><small>${user.email}</small></td>
-      <td>${user.plan}</td>
+      <td>${renderPlanSelect(user)}</td>
       <td><span class="status-pill ${user.status}">${statusLabel(user.status)}</span></td>
-      <td>${user.lastSeen}<br><small>${user.sessions} sessions</small></td>
+      <td>${user.lastSeen}<br><small>${numberWithComma(user.sessions)} sessions</small></td>
       <td><span class="risk-pill ${user.risk}">${severityLabel(user.risk)}</span></td>
       <td class="table-actions">
-        <button class="btn btn-secondary" data-action="reset-mfa" data-user="${user.email}" type="button">MFA 재설정</button>
-        <button class="btn btn-secondary" data-action="lock-user" data-user="${user.email}" type="button">계정 제한</button>
-        <button class="btn btn-secondary" data-action="kill-user-sessions" data-user="${user.email}" type="button">세션 종료</button>
+        <button class="btn btn-secondary" data-action="lock-user" data-user="${user.email}" type="button"${mutationAttrs()}>Limit</button>
+        <button class="btn btn-secondary" data-action="kill-user-sessions" data-user="${user.email}" type="button"${mutationAttrs()}>End sessions</button>
       </td>
     `;
     userTableBody.appendChild(tr);
@@ -252,11 +251,38 @@ function renderSessions() {
       <td>${session.relay}</td>
       <td>${session.expires}</td>
       <td class="table-actions">
-        <button class="btn btn-secondary" data-action="terminate-session" data-session="${session.id}" type="button">종료</button>
-        <button class="btn btn-secondary" data-action="extend-session" data-session="${session.id}" type="button">연장</button>
+        <button class="btn btn-secondary" data-action="terminate-session" data-session="${session.id}" type="button"${mutationAttrs()}>End</button>
+        <button class="btn btn-secondary" data-action="extend-session" data-session="${session.id}" type="button"${mutationAttrs()}>Extend</button>
       </td>
     `;
     sessionTableBody.appendChild(tr);
+  });
+}
+
+function renderToolHealth() {
+  if (!toolHealthTableBody) return;
+  toolHealthTableBody.innerHTML = '';
+  if (!toolHealth.length) {
+    toolHealthTableBody.innerHTML = '<tr><td colspan="8">No tool health data yet.</td></tr>';
+    return;
+  }
+  toolHealth.forEach((tool) => {
+    const tr = document.createElement('tr');
+    const queueText = `${numberWithComma(tool.queued || 0)} / ${numberWithComma(tool.running || 0)}`;
+    tr.innerHTML = `
+      <td><strong>${tool.label}</strong><br><small>${tool.slug}</small></td>
+      <td><span class="risk-pill ${tool.severity}">${statusLabel(tool.status)}</span><br><small>${numberWithComma(tool.activeSessions || 0)} active sessions</small></td>
+      <td>${numberWithComma(tool.callsToday || 0)}<br><small>${numberWithComma(tool.recentCalls || 0)} recent</small></td>
+      <td>${queueText}<br><small>${numberWithComma(tool.stale || 0)} stale</small></td>
+      <td>${numberWithComma(tool.failed || 0)}</td>
+      <td>${tool.lastError || '-'}<br><small>${formatDateTime(tool.lastUpdatedAt)}</small></td>
+      <td>${tool.recommendation || '-'}</td>
+      <td class="table-actions">
+        <button class="btn btn-secondary" data-action="mark-tool-reviewed" data-tool="${tool.slug}" type="button"${mutationAttrs()}>Review</button>
+        <button class="btn btn-secondary" data-action="terminate-tool-sessions" data-tool="${tool.slug}" type="button"${mutationAttrs()}>End sessions</button>
+      </td>
+    `;
+    toolHealthTableBody.appendChild(tr);
   });
 }
 
@@ -264,6 +290,10 @@ function renderLogs(filter = 'all') {
   if (!logTableBody) return;
   const rows = filter === 'all' ? logs : logs.filter((row) => row.type === filter || row.status === filter);
   logTableBody.innerHTML = '';
+  if (!rows.length) {
+    logTableBody.innerHTML = '<tr><td colspan="5">No operator actions, auth failures, relay errors, or billing webhook events yet.</td></tr>';
+    return;
+  }
   rows.forEach((row) => {
     const tr = document.createElement('tr');
     tr.innerHTML = `
@@ -277,10 +307,37 @@ function renderLogs(filter = 'all') {
   });
 }
 
+function renderAdminTokens() {
+  if (!adminTokenTableBody) return;
+  adminTokenTableBody.innerHTML = '';
+  if (!adminTokens.length) {
+    adminTokenTableBody.innerHTML = '<tr><td colspan="6">No admin tokens yet.</td></tr>';
+    return;
+  }
+  adminTokens.forEach((token) => {
+    const tr = document.createElement('tr');
+    tr.innerHTML = `
+      <td><strong>${token.name}</strong><br><small>${token.id}</small></td>
+      <td>${token.role}</td>
+      <td><span class="status-pill ${token.status}">${statusLabel(token.status)}</span></td>
+      <td>${token.createdBy || '-'}</td>
+      <td>${formatDateTime(token.lastUsedAt)}</td>
+      <td class="table-actions">
+        <button class="btn btn-secondary" data-action="revoke-admin-token" data-token="${token.id}" type="button"${token.status === 'active' ? mutationAttrs() : ' disabled'}>Revoke</button>
+      </td>
+    `;
+    adminTokenTableBody.appendChild(tr);
+  });
+}
+
 function renderActionFeed() {
   if (!actionFeed) return;
   actionFeed.innerHTML = '';
-  logs.slice(0, 6).forEach((row) => {
+  if (!actionRows.length) {
+    actionFeed.innerHTML = '<div class="feed-item success"><strong>Ready</strong><span>No operator actions have been recorded yet.</span></div>';
+    return;
+  }
+  actionRows.slice(0, 6).forEach((row) => {
     const item = document.createElement('div');
     item.className = `feed-item ${row.status}`;
     item.innerHTML = `<strong>${row.time}</strong><span>${row.message}</span>`;
@@ -291,51 +348,51 @@ function renderActionFeed() {
 function renderAll() {
   renderKpis();
   renderIssues();
+  renderToolHealth();
   renderUsers();
   renderSessions();
+  renderAdminTokens();
   renderLogs();
   renderActionFeed();
 }
 
 async function hydrateFromApi() {
-  try {
-    const data = await getApi('/admin/bootstrap');
-    if (Array.isArray(data.users) && data.users.length) {
-      users.splice(0, users.length, ...data.users.map((user) => ({
-        id: user.id,
-        name: user.displayName,
-        email: user.email,
-        plan: user.plan,
-        status: user.status,
-        lastSeen: user.lastSeenAt ? new Date(user.lastSeenAt * 1000).toLocaleString('ko-KR') : '-',
-        risk: user.risk,
-        sessions: 0
-      })));
-    }
-    if (Array.isArray(data.sessions)) {
-      sessions.splice(0, sessions.length, ...data.sessions.map((session) => ({
-        id: session.id,
-        user: session.user_id,
-        tool: session.tool,
-        status: session.status,
-        relay: session.relay_status,
-        expires: session.expires_at ? new Date(session.expires_at * 1000).toLocaleTimeString('ko-KR') : '-',
-        risk: session.status === 'active' ? 'normal' : 'warning'
-      })));
-    }
-    if (Array.isArray(data.logs)) {
-      logs = data.logs.map((row) => ({
-        time: new Date(row.at * 1000).toLocaleTimeString('ko-KR', { hour: '2-digit', minute: '2-digit' }),
-        type: row.event_type,
-        target: row.target,
-        message: row.message,
-        status: row.status
-      }));
-    }
-  } catch (error) {
-    addAction('관리자 API 접근이 거부되었습니다.', 'error');
-    throw error;
-  }
+  const data = await getApi('/admin/bootstrap');
+  summary = { ...summary, ...(data.summary || {}) };
+  adminCapabilities = {
+    role: data.admin?.role || null,
+    canMutate: data.capabilities?.canMutate === true
+  };
+  users.splice(0, users.length, ...(data.users || []).map((user) => ({
+    id: user.id,
+    name: user.displayName || user.name || user.email,
+    email: user.email,
+    plan: user.plan || '-',
+    status: user.status || '-',
+    lastSeen: formatDateTime(user.lastSeenAt || user.last_seen_at),
+    risk: user.risk || 'normal',
+    sessions: user.sessionCount || user.sessions || 0
+  })));
+  sessions.splice(0, sessions.length, ...(data.sessions || []).map((session) => ({
+    id: session.id,
+    user: session.user_email || session.userEmail || session.user_id,
+    tool: session.tool,
+    status: session.status,
+    relay: session.relay_status || session.relay || '-',
+    expires: formatTime(session.expires_at || session.expiresAt),
+    risk: session.status === 'active' ? 'normal' : 'warning'
+  })));
+  issues.splice(0, issues.length, ...(data.issues || []));
+  toolHealth.splice(0, toolHealth.length, ...(data.toolHealth || data.usage?.toolHealth || []));
+  adminTokens.splice(0, adminTokens.length, ...(data.tokens || []));
+  logs = (data.logs || []).map((row) => ({
+    time: row.at ? formatTime(row.at) : row.time || '-',
+    type: row.event_type || row.type || 'event',
+    target: row.target || '-',
+    message: row.message || '',
+    status: row.status || 'success'
+  }));
+  actionRows = logs.filter((row) => row.type.startsWith('admin.'));
 }
 
 function unlockAdmin() {
@@ -359,13 +416,14 @@ async function verifyAdminSession() {
   try {
     await hydrateFromApi();
     if (adminTokenMessage) {
-      adminTokenMessage.textContent = '관리자 세션 확인 완료. 운영 콘솔을 엽니다.';
+      const mode = adminCapabilities.canMutate ? 'operator' : 'read-only viewer';
+      adminTokenMessage.textContent = `Admin session verified. Live operations console is open in ${mode} mode.`;
       adminTokenMessage.classList.remove('error');
     }
     unlockAdmin();
   } catch {
     if (adminTokenMessage) {
-      adminTokenMessage.textContent = '관리자 권한이 있는 계정으로 로그인해야 운영 콘솔을 열 수 있습니다.';
+      adminTokenMessage.textContent = 'Log in with an admin account to open the operations console.';
       adminTokenMessage.classList.add('error');
     }
     lockAdmin();
@@ -382,7 +440,7 @@ adminTokenInput?.addEventListener('keydown', (event) => {
   if (event.key === 'Enter') adminTokenSubmit?.click();
 });
 
-document.addEventListener('click', (event) => {
+document.addEventListener('click', async (event) => {
   const target = event.target.closest('[data-action], [data-runbook]');
   if (!target) return;
   const action = target.dataset.action || target.dataset.runbook;
@@ -390,44 +448,79 @@ document.addEventListener('click', (event) => {
   const session = target.dataset.session;
   const issue = target.dataset.issue;
   const owner = target.dataset.owner;
-
-  const messages = {
-    'resolve-issue': `${issue} 조치 완료로 기록했습니다.`,
-    'open-user': `${owner} 사용자를 검색 필터에 입력했습니다.`,
-    'reset-mfa': `${user} MFA 재설정 링크를 발급했습니다.`,
-    'lock-user': `${user} 계정에 임시 제한을 적용했습니다.`,
-    'kill-user-sessions': `${user}의 활성 세션 종료 요청을 보냈습니다.`,
-    'terminate-session': `${session} 세션 종료 요청을 보냈습니다.`,
-    'extend-session': `${session} 세션 만료 시간을 연장했습니다.`,
-    'relay-restart': 'Relay 재시작 작업을 큐에 등록했습니다.',
-    'billing-retry': '결제 웹훅 실패분을 재처리 큐로 이동했습니다.',
-    'rate-limit': '비정상 세션 계정에 임시 rate limit을 적용했습니다.',
-    'export-audit': '감사 로그 CSV 생성 작업을 시작했습니다.'
-  };
-
-  postApi('/admin/action', { action, target: user || session || issue || owner || 'system' }).catch(() => {});
+  const token = target.dataset.token;
+  const tool = target.dataset.tool;
+  const apiTarget = user || session || issue || owner || token || tool || 'system';
 
   if (action === 'open-user' && userSearchInput) {
     userSearchInput.value = owner;
     renderUsers();
+    addAction(`Filtered owner: ${owner}`);
+    return;
   }
-  addAction(messages[action] || '운영 조치를 기록했습니다.');
+  if (!adminCapabilities.canMutate) {
+    addAction('This operator account is read-only.', 'error');
+    return;
+  }
+
+  try {
+    const payload = { action, target: apiTarget };
+    if (action === 'set-plan') {
+      const planInput = document.querySelector(`[data-plan-for="${escapeSelector(apiTarget)}"]`);
+      payload.plan = planInput?.value || '';
+    }
+    const result = await postApi('/admin/action', payload);
+    await hydrateFromApi();
+    renderAll();
+    const suffix = result.plan ? ` plan=${result.plan}` : '';
+    addAction(`${action} completed for ${apiTarget}.${suffix} affected=${result.affected ?? 0}`);
+  } catch (error) {
+    addAction(`${action} failed for ${apiTarget}: ${error.message}`, 'error');
+  }
+});
+
+createAdminTokenButton?.addEventListener('click', async () => {
+  if (!adminCapabilities.canMutate) {
+    addAction('This operator account is read-only.', 'error');
+    return;
+  }
+  const name = (adminTokenNameInput?.value || '').trim();
+  const role = adminTokenRoleSelect?.value || 'viewer';
+  if (!name) {
+    addAction('Token name is required.', 'error');
+    return;
+  }
+  try {
+    const result = await postApi('/admin/action', { action: 'create-admin-token', target: name, name, role });
+    if (newAdminTokenBox) {
+      newAdminTokenBox.classList.remove('hidden');
+      newAdminTokenBox.innerHTML = `<strong>New ${result.role} token</strong><code>${result.token}</code><small>Copy it now. It will not be shown again.</small>`;
+    }
+    if (adminTokenNameInput) adminTokenNameInput.value = '';
+    await hydrateFromApi();
+    renderAll();
+    addAction(`create-admin-token completed. role=${result.role}`);
+  } catch (error) {
+    addAction(`create-admin-token failed: ${error.message}`, 'error');
+  }
 });
 
 adminLockButton?.addEventListener('click', lockAdmin);
 refreshAdminData?.addEventListener('click', () => {
-  hydrateFromApi().finally(() => {
-    renderAll();
-    addAction('운영 데이터를 새로고침했습니다.');
-  });
+  hydrateFromApi()
+    .then(() => {
+      renderAll();
+      addAction('Live operations data refreshed.');
+    })
+    .catch((error) => addAction(`Refresh failed: ${error.message}`, 'error'));
 });
 runTriageButton?.addEventListener('click', () => {
-  riskSelect.value = 'critical';
+  if (riskSelect) riskSelect.value = 'critical';
   renderAll();
-  addAction('긴급 이슈만 표시하도록 자동 분류했습니다.', 'warning');
+  addAction('Showing critical issues only.', 'warning');
 });
 expireStaleButton?.addEventListener('click', () => {
-  addAction('만료 임박 세션 종료 작업을 큐에 등록했습니다.', 'warning');
+  addAction('Stale-session cleanup should be handled from active session rows.', 'warning');
 });
 clearLogFilterButton?.addEventListener('click', () => renderLogs());
 rangeSelect?.addEventListener('change', renderAll);

@@ -64,7 +64,38 @@ def test_missing_mcp_tool_name_is_actionable():
         raise AssertionError("expected ValueError")
 
 
+def test_localcode_no_app_status_and_call_proxy():
+    def run(port):
+        config = {"path": "test-config.json", "mcps": {"localcode": {"id": "localcode", "name": "Local Code MCP", "local_port": port}}}
+        # localcode has no desktop app, so .status reports available without a process
+        # but still reflects local MCP reachability.
+        status = agent.run_adapter("localcode.status", {}, config)
+        assert status["available"] is True
+        assert status["executable"] is None
+        assert status["mcp"]["reachable"] is True
+        # localcode.mcp.call routes to the local-code MCP server.
+        result = agent.run_adapter("localcode.mcp.call", {"tool": "mcp_read_file", "arguments": {"path": "x"}}, config)
+        assert result["content"][0]["type"] == "text"
+        assert '"name": "mcp_read_file"' in result["content"][0]["text"]
+    with_fake_server(run)
+
+
+def test_opencrab_no_app_status_and_call_proxy():
+    def run(port):
+        config = {"path": "test-config.json", "mcps": {"opencrab": {"id": "opencrab", "name": "OpenCrab MCP", "local_port": port}}}
+        status = agent.run_adapter("opencrab.status", {}, config)
+        assert status["available"] is True
+        assert status["executable"] is None
+        assert status["mcp"]["reachable"] is True
+        result = agent.run_adapter("opencrab.mcp.call", {"tool": "ontology_ingest", "arguments": {"text": "x", "source_id": "unit-test"}}, config)
+        assert result["content"][0]["type"] == "text"
+        assert '"name": "ontology_ingest"' in result["content"][0]["text"]
+    with_fake_server(run)
+
+
 if __name__ == "__main__":
     test_mcp_status_and_call_proxy()
     test_missing_mcp_tool_name_is_actionable()
+    test_localcode_no_app_status_and_call_proxy()
+    test_opencrab_no_app_status_and_call_proxy()
     print("PASS agent local MCP proxy tests")

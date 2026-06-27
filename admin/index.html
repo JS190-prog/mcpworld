@@ -5,7 +5,7 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <title>MCP World Operator Console</title>
   <meta name="description" content="MCP World 운영자용 사용자, 세션, 로그, 장애 조치 콘솔">
-  <link rel="stylesheet" href="../styles.css">
+  <link rel="stylesheet" href="../styles.css?v=20260627-admin-tokens">
 </head>
 <body class="admin-page operator-page">
   <header class="site-header">
@@ -17,6 +17,7 @@
       <div class="nav-links">
         <a href="#overview">상황판</a>
         <a href="#issues">문제</a>
+        <a href="#tool-health">Tool Health</a>
         <a href="#users">아이디 관리</a>
         <a href="#sessions">세션</a>
         <a href="#logs">로그</a>
@@ -59,10 +60,9 @@
           <select id="planSelect">
             <option value="all" selected>전체</option>
             <option value="free">Free</option>
-            <option value="starter">Starter</option>
             <option value="pro">Pro</option>
-            <option value="studio">Studio</option>
-            <option value="team">Team</option>
+            <option value="expert">Expert</option>
+            <option value="admin">Admin</option>
           </select>
         </label>
         <label>위험도
@@ -102,6 +102,24 @@
           <h3>문제를 선택하세요.</h3>
           <p>왼쪽 목록에서 문제를 선택하면 영향 범위, 원인 추정, 조치 버튼이 표시됩니다.</p>
         </aside>
+      </div>
+    </section>
+
+    <section id="tool-health" class="section dashboard-section">
+      <div class="section-heading-row">
+        <div>
+          <p class="eyebrow">Tool Health</p>
+          <h2>도구 상태와 개선 큐</h2>
+          <p>도구별 호출 실패, 대기 중인 호출, 활성 세션, 최근 오류를 한눈에 보고 즉시 조치합니다.</p>
+        </div>
+      </div>
+      <div class="admin-table-wrap">
+        <table class="admin-table ops-table" id="toolHealthTable">
+          <thead>
+            <tr><th>도구</th><th>상태</th><th>오늘 호출</th><th>대기/실행</th><th>실패</th><th>최근 오류</th><th>권장 조치</th><th>조치</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
@@ -153,13 +171,40 @@
       <div>
         <p class="eyebrow">Runbook Actions</p>
         <h2>운영자가 바로 실행할 조치</h2>
-        <p>실제 운영에서는 각 버튼을 서버 API와 감사 로그에 연결합니다. 현재는 조치 결과와 감사 로그를 화면에서 시뮬레이션합니다.</p>
+        <p>현재 지원되는 즉시 조치는 사용자 제한, 사용자 세션 종료, 개별 세션 종료, 세션 연장입니다. 지원되지 않는 조치는 성공 로그를 만들지 않습니다.</p>
       </div>
       <div class="runbook-grid">
         <button class="runbook-card" data-runbook="relay-restart" type="button"><strong>Relay 재시작</strong><span>지연 또는 5xx 급증 시 tunnel broker 재기동</span></button>
         <button class="runbook-card" data-runbook="billing-retry" type="button"><strong>웹훅 재처리</strong><span>결제 이벤트 실패분을 재시도 큐로 이동</span></button>
         <button class="runbook-card" data-runbook="rate-limit" type="button"><strong>Rate limit 강화</strong><span>비정상 세션 증가 계정에 임시 제한 적용</span></button>
         <button class="runbook-card" data-runbook="export-audit" type="button"><strong>감사 로그 내보내기</strong><span>최근 운영자 조치와 보안 이벤트 CSV 생성</span></button>
+      </div>
+    </section>
+
+    <section id="tokens" class="section dashboard-section">
+      <div class="section-heading-row">
+        <div>
+          <p class="eyebrow">Admin Tokens</p>
+          <h2>관리자 토큰 관리</h2>
+          <p>외부 점검이나 자동화에 사용할 관리자 API 토큰을 생성하고 폐기합니다. 토큰 원문은 생성 직후 한 번만 표시됩니다.</p>
+        </div>
+        <div class="token-create-row">
+          <input id="adminTokenName" type="text" placeholder="토큰 이름">
+          <select id="adminTokenRole">
+            <option value="viewer">Viewer</option>
+            <option value="operator">Operator</option>
+          </select>
+          <button class="btn btn-primary" id="createAdminTokenButton" type="button">토큰 생성</button>
+        </div>
+      </div>
+      <div id="newAdminTokenBox" class="token-output hidden"></div>
+      <div class="admin-table-wrap">
+        <table class="admin-table ops-table" id="adminTokenTable">
+          <thead>
+            <tr><th>이름</th><th>권한</th><th>상태</th><th>생성자</th><th>최근 사용</th><th>조치</th></tr>
+          </thead>
+          <tbody></tbody>
+        </table>
       </div>
     </section>
 
@@ -190,6 +235,6 @@
   </main>
 
   <div class="toast hidden" id="adminToast" role="status"></div>
-  <script src="admin.js"></script>
+  <script src="admin.js?v=20260627-tool-health-setup"></script>
 </body>
 </html>

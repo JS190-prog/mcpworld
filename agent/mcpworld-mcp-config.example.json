@@ -34,6 +34,18 @@
       "local_port": 18000,
       "path": "/bmcp/",
       "app_hint": "Start Blender and its MCP addon before calling Blender tools."
+    },
+    {
+      "id": "localcode",
+      "name": "Local Code MCP",
+      "local_port": 18005,
+      "app_hint": "Run the Local Code MCP HTTP endpoint (e.g. via mcp-proxy) and set its allowed_roots to the folders you want editable. No desktop app required. Adjust local_port or local_url to your endpoint."
+    },
+    {
+      "id": "opencrab",
+      "name": "OpenCrab MCP",
+      "local_port": 18006,
+      "app_hint": "Run the OpenCrab stdio MCP through an HTTP MCP proxy at /mcp. Example target command: opencrab serve or python -m opencrab.mcp.server from C:/scratch/OpenCrab. Adjust local_port or local_url to your endpoint."
     }
   ]
 }

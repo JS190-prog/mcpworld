@@ -38,7 +38,7 @@
         <h1>ChatGPT에서 내 PC의 CAD, Office, HWP를 바로 호출하세요.</h1>
         <p class="hero-text">MCP World는 웹 SaaS 계정과 Windows 로컬 에이전트를 연결해 프로그램별 MCP 주소를 발급합니다. 사용자는 파일을 반복 업로드하지 않고, 관리자는 세션과 구독 상태를 한 화면에서 운영할 수 있습니다.</p>
         <div class="hero-actions">
-          <button class="btn btn-primary open-login" type="button">데모 로그인</button>
+          <button class="btn btn-primary open-login" type="button">로그인</button>
           <a class="btn btn-secondary" href="dashboard.html">대시보드 보기</a>
         </div>
         <div class="trust-row" aria-label="서비스 원칙">
@@ -146,11 +146,9 @@
       <p class="eyebrow">Pricing</p>
       <h2>VPS 런칭용 요금제 초안</h2>
       <div class="cards pricing">
-        <article class="price-card"><h3>Free</h3><p class="price">0원</p><p>1 PC, 1개 프로그램, 테스트 세션</p><button class="btn btn-secondary open-signup" type="button">시작</button></article>
-        <article class="price-card"><h3>Starter</h3><p class="price">9,900원/월</p><p>Word, PowerPoint, Excel</p><button class="btn btn-secondary open-checkout" type="button">결제 확인</button></article>
-        <article class="price-card featured"><h3>Pro</h3><p class="price">29,900원/월</p><p>Office, CAD/ZWCAD, HWP</p><button class="btn btn-primary open-checkout" type="button">추천 플랜</button></article>
-        <article class="price-card"><h3>Studio</h3><p class="price">49,900원/월</p><p>Pro, Photoshop, Blender, 긴 세션</p><button class="btn btn-secondary open-checkout" type="button">문의</button></article>
-        <article class="price-card"><h3>Team</h3><p class="price">문의</p><p>중앙 결제, 멤버 관리, MCP별 권한 정책</p><button class="btn btn-secondary open-checkout" type="button">상담 요청</button></article>
+        <article class="price-card"><h3>Free</h3><p class="price">0원</p><p>모든 앱(Office·CAD·HWP·Photoshop·Blender) · 하루 50회 호출</p><button class="btn btn-secondary open-signup" type="button">시작</button></article>
+        <article class="price-card featured"><h3>Pro</h3><p class="price">29,900원/월</p><p>모든 앱 · 하루 1,000회 호출</p><button class="btn btn-primary open-checkout" type="button">추천 플랜</button></article>
+        <article class="price-card"><h3>Expert</h3><p class="price">49,900원/월</p><p>모든 앱 · 호출 무제한 · 긴 세션</p><button class="btn btn-secondary open-checkout" type="button">결제 확인</button></article>
       </div>
     </section>
 
@@ -168,11 +166,11 @@
 
     <section id="deploy" class="section split">
       <div>
-        <p class="eyebrow">VPS Upload Ready</p>
+        <p class="eyebrow">Production Deployment</p>
         <h2>지금 폴더 그대로 정적 사이트로 올릴 수 있습니다.</h2>
       </div>
       <div class="deploy-box">
-        <p>현재 산출물은 백엔드 없이도 동작하는 정적 프론트엔드입니다. VPS에서는 Nginx 또는 Caddy의 웹 루트에 이 폴더 파일을 업로드하면 랜딩, 사용자 대시보드, 관리자 데모를 바로 확인할 수 있습니다.</p>
+        <p>VPS에서는 Nginx 또는 Caddy의 웹 루트에 정적 파일을 배포하고, 백엔드 API와 Cloudflare Worker 프록시를 함께 연결해 랜딩, 사용자 대시보드, 관리자 콘솔을 운영합니다.</p>
         <div class="code-block">/var/www/mcpworld/
   index.html
   dashboard.html
@@ -215,20 +213,15 @@
 
   <footer class="site-footer">
     <span>© 2026 MCP World SaaS Concept</span>
-    <span>Static VPS-ready prototype</span>
+    <span>Production readiness checklist in progress</span>
   </footer>
 
   <dialog id="loginDialog" class="modal">
     <form method="dialog" class="modal-box">
       <button class="modal-close" type="button" aria-label="닫기">×</button>
-      <h2>데모 로그인</h2>
-      <div class="demo-credential">
-        <strong>테스트 계정</strong>
-        <span>아이디: <code>demo</code></span>
-        <span>비밀번호: <code>demo1234</code></span>
-      </div>
-      <label>아이디 또는 이메일<input id="loginUser" type="text" value="demo" autocomplete="username"></label>
-      <label>비밀번호<input id="loginPass" type="password" value="demo1234" autocomplete="current-password"></label>
+      <h2>로그인</h2>
+      <label>이메일<input id="loginUser" type="email" autocomplete="username"></label>
+      <label>비밀번호<input id="loginPass" type="password" autocomplete="current-password"></label>
       <p class="form-message" id="loginMessage" role="status"></p>
       <button class="btn btn-primary full" id="googleLoginButton" type="button">Google로 로그인</button>
       <div class="divider">또는</div>
@@ -260,7 +253,7 @@
       <button class="modal-close" type="button" aria-label="닫기">×</button>
       <h2>결제 전 확인</h2>
       <ul class="modal-list">
-        <li>실서비스에서는 토스페이먼츠, Stripe, Paddle 같은 hosted checkout을 연결합니다.</li>
+        <li>결제 기능을 사용하려면 토스페이먼츠, Stripe, Paddle 같은 hosted checkout 설정이 필요합니다.</li>
         <li>카드 원문 정보는 MCP World 서버에 저장하지 않는 구성을 권장합니다.</li>
         <li>구독 상태는 커넥터 발급 API에서 매번 검증해야 합니다.</li>
         <li>자동 갱신, 구독 해지 방법, 환불 기준은 결제 전 별도 확인해야 합니다.</li>

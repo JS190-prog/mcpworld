@@ -13,6 +13,7 @@ Environment=MCPWORLD_DB=/var/lib/mcpworld/mcpworld.sqlite3
 # Uncomment after deploying workers/mcpworld-proxy.
 # Environment=MCPWORLD_PROXY_PUBLIC_BASE=https://mcpworld.tornado616.cloud/mcpworld
 Environment=MCPWORLD_ADMIN_EMAILS=sky7823a@gmail.com
+# /etc/mcpworld/session.env should define MCPWORLD_SESSION_SECRET and billing/OAuth secrets.
 EnvironmentFile=-/etc/mcpworld/session.env
 WorkingDirectory=/var/www/mcpworld/backend
 ExecStart=/usr/bin/python3 /var/www/mcpworld/backend/mcpworld_api.py

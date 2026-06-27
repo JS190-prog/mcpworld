@@ -31,7 +31,16 @@ MCP_ID_ALIASES = {
 
 def post_json(url, payload):
     data = json.dumps(payload).encode("utf-8")
-    req = urllib.request.Request(url, data=data, headers={"Content-Type": "application/json"}, method="POST")
+    req = urllib.request.Request(
+        url,
+        data=data,
+        headers={
+            "Content-Type": "application/json",
+            "Accept": "application/json",
+            "User-Agent": f"MCPWorld-Agent/{AGENT_VERSION}",
+        },
+        method="POST",
+    )
     with urllib.request.urlopen(req, timeout=15) as res:
         return json.loads(res.read().decode("utf-8"))
 
@@ -162,10 +171,21 @@ def run_adapter(tool_name, arguments, config=None):
         "photoshop.status": ("Photoshop", ["Photoshop.exe", "photoshop"]),
         "blender.status": ("Blender", ["blender.exe", "blender"]),
     }
-    if tool_name in status_tools:
-        label, candidates = status_tools[tool_name]
-        result = app_status(label, candidates, arguments)
+    if tool_name.endswith(".status") and not tool_name.endswith(".mcp.status"):
         target = tool_name.split(".", 1)[0]
+        if tool_name in status_tools:
+            label, candidates = status_tools[tool_name]
+            result = app_status(label, candidates, arguments)
+        else:
+            # No-app connector (e.g. localcode): there is no desktop app process to
+            # probe; availability is determined by local MCP reachability below.
+            result = {
+                "available": True,
+                "app": target,
+                "executable": None,
+                "arguments": arguments,
+                "note": "No local desktop app required; this connector relays to a local MCP server.",
+            }
         try:
             result["mcp"] = mcp_status(target, config)
         except Exception as exc:
@@ -214,7 +234,7 @@ def poll_once(server, email, agent_id, config):
 def main():
     parser = argparse.ArgumentParser(description="MCP World local agent bootstrap")
     parser.add_argument("--server", default="https://www.tornado616.cloud/mcpworld")
-    parser.add_argument("--email", default="demo@mcpworld.local")
+    parser.add_argument("--email", default=os.environ.get("MCPWORLD_AGENT_EMAIL", ""))
     parser.add_argument("--device-name", default=platform.node() or "Windows PC")
     parser.add_argument("--agent-id", default="")
     parser.add_argument("--mcp-config", default=os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG", ""), help="Path to the local MCP World config.json.")
@@ -226,6 +246,8 @@ def main():
     if args.version:
         print(AGENT_VERSION)
         return
+    if not args.email:
+        parser.error("--email or MCPWORLD_AGENT_EMAIL is required")
 
     local_config = load_local_mcp_config(args.mcp_config or None)
 

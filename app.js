@@ -29,14 +29,6 @@ function applyExternalLinks() {
 
 applyExternalLinks();
 
-const demoAccount = {
-  id: 'demo',
-  email: 'demo@mcpworld.local',
-  pass: 'demo1234',
-  nickname: '데모 사용자',
-  plan: 'Pro Trial'
-};
-
 async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
     method: 'POST',
@@ -90,7 +82,7 @@ function closeDialog(dialog) {
 }
 
 function goToDashboard(user) {
-  sessionStorage.setItem('mcpworld_demo_user', JSON.stringify(user));
+  sessionStorage.setItem('mcpworld_user', JSON.stringify(user));
   window.location.href = 'dashboard.html';
 }
 
@@ -130,7 +122,6 @@ document.querySelectorAll('.modal').forEach((dialog) => {
 document.querySelector('#loginSubmit')?.addEventListener('click', () => {
   const user = loginUser?.value.trim() || '';
   const pass = loginPass?.value || '';
-  const isDemoUser = user === demoAccount.id || user === demoAccount.email;
 
   postApi('/auth/login', { identifier: user, password: pass })
     .then((data) => {
@@ -143,13 +134,7 @@ document.querySelector('#loginSubmit')?.addEventListener('click', () => {
       });
     })
     .catch(() => {
-      if (isDemoUser && pass === demoAccount.pass) {
-        loginMessage.textContent = '로컬 데모 로그인으로 이동합니다.';
-        loginMessage.classList.remove('error');
-        goToDashboard(demoAccount);
-        return;
-      }
-      loginMessage.textContent = '로그인에 실패했습니다. 데모 계정은 demo / demo1234 입니다.';
+      loginMessage.textContent = '로그인에 실패했습니다. 이메일과 비밀번호를 확인해 주세요.';
       loginMessage.classList.add('error');
     });
 });

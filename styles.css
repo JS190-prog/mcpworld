@@ -148,7 +148,7 @@ p { color: var(--muted); line-height: 1.72; }
 .checklist li { border: 1px solid var(--line); border-radius: 8px; padding: 14px 16px; background: var(--surface); }
 .checklist li::before { content: "✓"; color: var(--good); margin-right: 10px; font-weight: 900; }
 
-.pricing { grid-template-columns: repeat(5, 1fr); }
+.pricing { grid-template-columns: repeat(3, 1fr); }
 .price-card.featured { border-color: rgba(86, 194, 163, 0.72); box-shadow: 0 0 0 1px rgba(86, 194, 163, 0.18); }
 .price { font-size: 30px; font-weight: 900; color: var(--text); margin: 8px 0; }
 .code-block {
@@ -299,6 +299,15 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 .table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
 .ops-table small { color: var(--muted); }
 .table-actions .btn { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+.inline-control { display: flex; align-items: center; gap: 8px; min-width: 210px; }
+.inline-control select { width: auto; min-width: 112px; padding: 7px 10px; font-size: 12px; }
+.inline-control .btn { min-height: 34px; padding: 7px 10px; font-size: 12px; }
+.token-create-row { display: grid; grid-template-columns: minmax(180px, 1fr) 130px auto; gap: 10px; align-items: end; }
+.token-create-row input,
+.token-create-row select { padding: 10px 12px; }
+.token-output { margin: 0 0 16px; border: 1px solid var(--accent); border-radius: 8px; padding: 14px; background: rgba(98, 200, 161, 0.08); }
+.token-output code { display: block; margin: 10px 0 6px; padding: 10px; border-radius: 8px; color: var(--text); background: rgba(0, 0, 0, 0.24); overflow-wrap: anywhere; }
+.token-output small { color: var(--muted); }
 .runbook-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 14px; }
 .runbook-card {
   border: 1px solid var(--line);

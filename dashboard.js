@@ -31,13 +31,15 @@ const connectorTools = [
   { label: 'CAD / ZWCAD', versionName: 'ZWCAD 2025', slug: 'cad', executablePath: 'C:\\Program Files\\ZWSOFT\\ZWCAD 2025\\ZWCAD.exe' },
   { label: 'HWP', versionName: 'Hancom Office HWP', slug: 'hwp', executablePath: 'C:\\Program Files (x86)\\Hnc\\Office\\Hwp.exe' },
   { label: 'Photoshop', versionName: 'Adobe Photoshop', slug: 'photoshop', executablePath: 'C:\\Program Files\\Adobe\\Adobe Photoshop\\Photoshop.exe' },
-  { label: 'Blender', versionName: 'Blender', slug: 'blender', executablePath: 'C:\\Program Files\\Blender Foundation\\Blender\\blender.exe' }
+  { label: 'Blender', versionName: 'Blender', slug: 'blender', executablePath: 'C:\\Program Files\\Blender Foundation\\Blender\\blender.exe' },
+  { label: 'Local Code', versionName: 'Local Code MCP · 파일 편집 (데스크톱 앱 불필요)', slug: 'localcode', executablePath: '로컬 코드 MCP 서버 (허용 폴더 내 파일 편집)' },
+  { label: 'OpenCrab Ingest', versionName: 'OpenCrab MCP · 온톨로지/문서 인제스트', slug: 'opencrab', executablePath: 'OpenCrab MCP 서버 (예: 127.0.0.1:18006/mcp)' }
 ];
 
 const fallbackUser = {
-  nickname: '데모 사용자',
-  email: 'demo@mcpworld.local',
-  plan: 'Pro Trial'
+  nickname: '사용자',
+  email: '',
+  plan: 'Free Trial'
 };
 
 const registeredTools = new Set();
@@ -48,8 +50,16 @@ async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify(payload)
   });
+  const data = await response.json().catch(() => ({}));
+  if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
+  return data;
+}
+
+async function getApi(path) {
+  const response = await fetch(`api${path}`, { credentials: 'same-origin' });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) throw new Error(data.error || 'api_error');
   return data;
@@ -63,9 +73,25 @@ function getAppBaseUrl() {
 
 function getUser() {
   try {
-    const raw = sessionStorage.getItem('mcpworld_demo_user');
+    const raw = sessionStorage.getItem('mcpworld_user');
     return raw ? JSON.parse(raw) : fallbackUser;
   } catch {
+    return fallbackUser;
+  }
+}
+
+async function loadAuthenticatedUser() {
+  try {
+    const data = await getApi('/auth/me');
+    const user = {
+      nickname: data.user.displayName,
+      email: data.user.email,
+      plan: data.user.plan
+    };
+    sessionStorage.setItem('mcpworld_user', JSON.stringify(user));
+    return user;
+  } catch {
+    sessionStorage.removeItem('mcpworld_user');
     return fallbackUser;
   }
 }
@@ -87,6 +113,7 @@ function buildConnectorUrl(user, toolSlug, sessionId) {
 }
 
 async function loadConnectorLinks(user, options = {}) {
+  if (!user.email) return false;
   const endpoint = options.regenerate ? '/sessions/regenerate' : '/sessions/links';
   try {
     const data = await postApi(endpoint, { email: user.email });
@@ -106,7 +133,7 @@ async function loadConnectorLinks(user, options = {}) {
 function buildPairUrl(user, tool, sessionId) {
   const params = new URLSearchParams({
     server: getAppBaseUrl(),
-    user: user.email || fallbackUser.email,
+    user: user.email || '',
     tool: tool.slug,
     token: sessionId,
     program_path: tool.executablePath
@@ -117,11 +144,15 @@ function buildPairUrl(user, tool, sessionId) {
 function renderUser(user) {
   if (welcomeTitle) welcomeTitle.textContent = `${user.nickname}님, MCP 연결을 시작하세요.`;
   if (accountName) accountName.textContent = user.nickname;
-  if (accountEmail) accountEmail.textContent = user.email;
+  if (accountEmail) accountEmail.textContent = user.email || '로그인이 필요합니다.';
   if (planName) planName.textContent = user.plan || 'Free Trial';
 }
 
-async function applyAdminAccess() {
+async function applyAdminAccess(user) {
+  if (!user.email) {
+    document.querySelectorAll('[data-admin-link]').forEach((link) => link.remove());
+    return;
+  }
   let isAdmin = false;
   try {
     const response = await fetch('api/auth/me', { credentials: 'same-origin' });
@@ -150,6 +181,21 @@ function setAgentState() {
 
 function renderConnectors(user) {
   if (!connectorList) return;
+  if (!user.email) {
+    connectorList.innerHTML = '';
+    const row = document.createElement('div');
+    row.className = 'connector-row is-waiting';
+    const title = document.createElement('div');
+    title.className = 'connector-title';
+    const titleName = document.createElement('strong');
+    titleName.textContent = '로그인이 필요합니다';
+    const description = document.createElement('small');
+    description.textContent = '계정으로 로그인하면 프로그램별 MCP 주소를 발급할 수 있습니다.';
+    title.append(titleName, description);
+    row.append(title);
+    connectorList.appendChild(row);
+    return;
+  }
   if (!currentSessionId) currentSessionId = makeSessionId();
   connectorList.innerHTML = '';
 
@@ -213,13 +259,18 @@ function renderConnectors(user) {
   });
 }
 
-const currentUser = getUser();
-renderUser(currentUser);
-applyAdminAccess();
-setAgentState();
-loadConnectorLinks(currentUser).then(() => {
+let currentUser = getUser();
+
+async function initDashboard() {
+  currentUser = await loadAuthenticatedUser();
+  renderUser(currentUser);
+  applyAdminAccess(currentUser);
+  setAgentState();
+  await loadConnectorLinks(currentUser);
   renderConnectors(currentUser);
-});
+}
+
+initDashboard();
 
 installMcpworldButton?.addEventListener('click', (event) => {
   installMcpworldButton.textContent = '다운로드 시작';
@@ -253,7 +304,7 @@ signOutButton?.addEventListener('click', async () => {
   } catch {
     // Local sign-out still clears the dashboard session marker.
   }
-  sessionStorage.removeItem('mcpworld_demo_user');
+  sessionStorage.removeItem('mcpworld_user');
   window.location.href = 'index.html';
 });
 
