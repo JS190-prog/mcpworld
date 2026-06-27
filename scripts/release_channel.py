@@ -212,10 +212,10 @@ def cmd_promote(args):
             dry=args.dry_run,
         )
     # 2) stable 스왑 (직전 stable 은 .prev 로 보존)
-    if STABLE.exists():
-        STABLE_PREV.write_text(STABLE.read_text(encoding="utf-8"), encoding="utf-8")
     promoted = compute_promoted_manifest(edge)
     if not args.dry_run:
+        if STABLE.exists():
+            STABLE_PREV.write_text(STABLE.read_text(encoding="utf-8"), encoding="utf-8")
         _write_json(STABLE, promoted)
         _write_json(LATEST, promoted)  # 사이트 폴백 호환
         # 3) 사이트 다운로드를 새 태그로 재지정
