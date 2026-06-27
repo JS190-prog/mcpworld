@@ -1,2 +1,2 @@
-a68df4a360219a65debef723027d039c8f4ab40fe850b488ec84611c100ceec1  MCPWorld-Agent-Setup.exe
-f77cc5b8d22630f2fedb3c918c974ec563b03c6d54cead1b5244d369d078aed3  MCPWorld-Agent-Setup.msi
+80ab1ace3b12efa18b40241243a8bc798cd9fdd5875d71215ca22a19c6189f0c  MCPWorld-Agent-Setup.exe
+09dc4cc0ed07e90ef0251db31d32e5678f579a999170b01651809e77d11d383c  MCPWorld-Agent-Setup.msi
