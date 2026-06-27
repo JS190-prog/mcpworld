@@ -1,0 +1,22 @@
+{
+  "channel": "beta",
+  "track": "stable",
+  "version": "0.2.0-beta.2",
+  "minimumAgentVersion": "0.2.0-beta.2",
+  "releasePage": "https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.2",
+  "notes": "Stable (consumer) channel. Updated only by scripts/release_channel.py promote after the test gate passes.",
+  "assets": {
+    "exe": {
+      "fileName": "MCPWorld-Agent-Setup.exe",
+      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.2/MCPWorld-Agent-Setup.exe",
+      "sha256": "80ab1ace3b12efa18b40241243a8bc798cd9fdd5875d71215ca22a19c6189f0c",
+      "recommendedFor": "general Windows users"
+    },
+    "msi": {
+      "fileName": "MCPWorld-Agent-Setup.msi",
+      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.2/MCPWorld-Agent-Setup.msi",
+      "sha256": "09dc4cc0ed07e90ef0251db31d32e5678f579a999170b01651809e77d11d383c",
+      "recommendedFor": "managed enterprise deployment"
+    }
+  }
+}
