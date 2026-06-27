@@ -116,6 +116,21 @@ def promotion_eligibility(ledger, version, required_green=DEFAULT_REQUIRED_GREEN
     }
 
 
+def classify_verification(pytest_rc, smoke_rc=None):
+    """검증 실행의 종료코드 -> (result, health, note). 자동 게이트 기록용 순수 매핑.
+
+    pytest 통과 = result pass, 실패 = fail. 스모크(선택)가 실패하면 health fail
+    (테스트는 통과해도 도구가 실제로 안 도는 상태를 green 으로 치지 않음)."""
+    result = "pass" if pytest_rc == 0 else "fail"
+    health = "ok"
+    note = f"pytest={'pass' if pytest_rc == 0 else 'fail'}"
+    if smoke_rc is not None:
+        if smoke_rc != 0:
+            health = "fail"
+        note += f"; smoke={'ok' if smoke_rc == 0 else 'fail'}"
+    return result, health, note
+
+
 def compute_promoted_manifest(edge):
     """edge 매니페스트 -> stable 매니페스트 (track 만 stable 로 전환)."""
     promoted = dict(edge)
@@ -174,6 +189,28 @@ def cmd_record(args):
 
 def cmd_status(args):
     ledger = load_ledger()
+    elig = promotion_eligibility(ledger, args.version, args.required)
+    print(json.dumps(elig, ensure_ascii=False, indent=2))
+    sys.exit(0 if elig["eligible"] else 1)
+
+
+def run_verification(smoke_cmd=None):
+    """pytest(+선택 스모크)를 실제 실행하고 classify_verification 결과를 반환."""
+    pr = subprocess.run([sys.executable, "-m", "pytest", "tests", "-q"], cwd=str(ROOT))
+    smoke_rc = None
+    if smoke_cmd:
+        smoke_rc = subprocess.run(smoke_cmd, cwd=str(ROOT), shell=True).returncode
+    return classify_verification(pr.returncode, smoke_rc)
+
+
+def cmd_verify(args):
+    """테스트를 실제로 돌려 ledger 에 자동 기록(수기 record 대신). Phase 2 게이트 자동화."""
+    ledger = load_ledger()
+    for i in range(args.runs):
+        result, health, note = run_verification(args.smoke)
+        ledger = record_result(ledger, args.version, result, health=health, note=note)
+        _write_json(LEDGER, ledger)
+        print(f"run {i + 1}/{args.runs}: result={result} health={health} ({note})")
     elig = promotion_eligibility(ledger, args.version, args.required)
     print(json.dumps(elig, ensure_ascii=False, indent=2))
     sys.exit(0 if elig["eligible"] else 1)
@@ -271,6 +308,13 @@ def build_parser():
     ps.add_argument("--version", required=True)
     ps.add_argument("--required", type=int, default=DEFAULT_REQUIRED_GREEN)
     ps.set_defaults(func=cmd_status)
+
+    pv = sub.add_parser("verify", help="pytest(+스모크)를 실제 실행해 결과를 자동 기록")
+    pv.add_argument("--version", required=True)
+    pv.add_argument("--runs", type=int, default=1, help="연속 실행 횟수(기본 1)")
+    pv.add_argument("--smoke", default=None, help="추가 스모크 명령(실패 시 health=fail)")
+    pv.add_argument("--required", type=int, default=DEFAULT_REQUIRED_GREEN)
+    pv.set_defaults(func=cmd_verify)
 
     pp = sub.add_parser("promote", help="게이트+수동승인 통과 시 edge->stable 승격")
     pp.add_argument("--version", required=True)

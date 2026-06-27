@@ -119,6 +119,33 @@ def test_repoint_site_text_replaces_tag():
     assert "beta.2" not in out
 
 
+def test_classify_verification_pytest_only():
+    assert rc.classify_verification(0) == ("pass", "ok", "pytest=pass")
+    assert rc.classify_verification(1) == ("fail", "ok", "pytest=fail")
+
+
+def test_classify_verification_with_smoke():
+    # tests pass and tool smoke runs -> green
+    assert rc.classify_verification(0, 0) == ("pass", "ok", "pytest=pass; smoke=ok")
+    # tests pass but the tool does not actually run -> health fail (not green)
+    assert rc.classify_verification(0, 1) == ("pass", "fail", "pytest=pass; smoke=fail")
+    # tests fail but smoke ok -> result fail
+    assert rc.classify_verification(1, 0) == ("fail", "ok", "pytest=fail; smoke=ok")
+
+
+def test_classify_verification_feeds_gate():
+    # a pass/ok classification recorded 3x should make the gate eligible
+    result, health, _ = rc.classify_verification(0, 0)
+    ledger = {}
+    for i in range(3):
+        ledger = rc.record_result(ledger, "v", result, health=health, ts=i)
+    assert rc.promotion_eligibility(ledger, "v", required_green=3)["eligible"] is True
+    # a pass-with-failing-smoke classification must NOT make it eligible
+    result, health, _ = rc.classify_verification(0, 1)
+    ledger2 = rc.record_result({}, "v", result, health=health)
+    assert rc.green_streak(ledger2, "v") == 0
+
+
 def test_seeded_channel_manifests_are_consistent():
     """The committed edge/stable seeds should be valid and same-version at rest."""
     root = Path(__file__).resolve().parents[1]
