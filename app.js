@@ -7,6 +7,10 @@ const loginUser = document.querySelector('#loginUser');
 const loginPass = document.querySelector('#loginPass');
 const loginMessage = document.querySelector('#loginMessage');
 const signupMessage = document.querySelector('#signupMessage');
+const signupEmail = document.querySelector('#signupEmail');
+const signupName = document.querySelector('#signupName');
+const signupPass = document.querySelector('#signupPass');
+let currentAuthUser = null;
 
 
 function applyExternalLinks() {
@@ -33,6 +37,7 @@ async function postApi(path, payload) {
   const response = await fetch(`api${path}`, {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
+    credentials: 'same-origin',
     body: JSON.stringify(payload)
   });
   const data = await response.json().catch(() => ({}));
@@ -45,7 +50,7 @@ async function postApi(path, payload) {
 }
 
 async function getApi(path) {
-  const response = await fetch(`api${path}`);
+  const response = await fetch(`api${path}`, { credentials: 'same-origin' });
   const data = await response.json().catch(() => ({}));
   if (!response.ok || data.ok === false) {
     const error = new Error(data.error || 'api_error');
@@ -86,12 +91,75 @@ function goToDashboard(user) {
   window.location.href = 'dashboard.html';
 }
 
+function resetSignupForm() {
+  [signupEmail, signupName, signupPass].forEach((input) => {
+    if (input) input.value = '';
+  });
+  ['#agreeTerms', '#agreePrivacy', '#agreeAgentNotice', '#agreeMarketing'].forEach((selector) => {
+    const checkbox = document.querySelector(selector);
+    if (checkbox) checkbox.checked = false;
+  });
+  if (signupMessage) {
+    signupMessage.textContent = '';
+    signupMessage.classList.remove('error');
+  }
+}
+
+function normalizeUser(user) {
+  if (!user) return null;
+  return {
+    nickname: user.displayName || user.nickname || user.email || '사용자',
+    email: user.email || '',
+    plan: user.plan || 'Free'
+  };
+}
+
+function applyAuthState(user) {
+  currentAuthUser = user;
+  if (user?.email) {
+    sessionStorage.setItem('mcpworld_user', JSON.stringify(user));
+    document.querySelectorAll('.open-login').forEach((button) => {
+      button.textContent = '대시보드';
+      button.setAttribute('aria-label', '대시보드로 이동');
+    });
+    document.querySelectorAll('.open-signup').forEach((button) => {
+      button.textContent = '대시보드';
+      button.setAttribute('aria-label', '대시보드로 이동');
+    });
+  }
+}
+
+async function refreshAuthState() {
+  try {
+    const data = await getApi('/auth/me');
+    applyAuthState(normalizeUser(data.user));
+    return currentAuthUser;
+  } catch {
+    currentAuthUser = null;
+    sessionStorage.removeItem('mcpworld_user');
+    return null;
+  }
+}
+
 document.querySelectorAll('.open-login').forEach((button) => {
-  button.addEventListener('click', () => openDialog(loginDialog));
+  button.addEventListener('click', async () => {
+    const user = currentAuthUser || await refreshAuthState();
+    if (user?.email) {
+      goToDashboard(user);
+      return;
+    }
+    openDialog(loginDialog);
+  });
 });
 
 document.querySelectorAll('.open-signup').forEach((button) => {
-  button.addEventListener('click', () => {
+  button.addEventListener('click', async () => {
+    const user = currentAuthUser || await refreshAuthState();
+    if (user?.email) {
+      goToDashboard(user);
+      return;
+    }
+    resetSignupForm();
     closeDialog(loginDialog);
     openDialog(signupDialog);
   });
@@ -173,6 +241,11 @@ document.querySelector('#signupSubmit')?.addEventListener('click', () => {
 
 async function startGoogleOAuth(messageTarget) {
   try {
+    const user = currentAuthUser || await refreshAuthState();
+    if (user?.email) {
+      goToDashboard(user);
+      return;
+    }
     const data = await getApi('/auth/google/url');
     if (data.url) window.location.href = data.url;
   } catch (error) {
@@ -190,3 +263,5 @@ document.querySelector('#googleLoginButton')?.addEventListener('click', () => {
 document.querySelector('#googleSignupButton')?.addEventListener('click', () => {
   startGoogleOAuth(signupMessage);
 });
+
+refreshAuthState();

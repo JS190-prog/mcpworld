@@ -349,6 +349,24 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 .modal-close { position: absolute; right: 16px; top: 12px; background: transparent; color: var(--text); border: 0; font-size: 30px; cursor: pointer; }
 .checkbox { display: flex !important; align-items: center; gap: 10px !important; }
 .checkbox input { width: auto; }
+.checkbox span { display: inline-flex; align-items: center; flex-wrap: wrap; gap: 8px; line-height: 1.5; }
+.checkbox span a {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 24px;
+  padding: 3px 9px;
+  border: 1px solid rgba(86, 194, 163, 0.52);
+  border-radius: 999px;
+  color: #0d1410;
+  background: linear-gradient(135deg, var(--accent), var(--accent-2));
+  font-size: 12px;
+  font-weight: 850;
+  text-decoration: none;
+  white-space: nowrap;
+}
+.checkbox span a:hover { filter: brightness(1.05); transform: translateY(-1px); }
+.checkbox span a:focus-visible { outline: 2px solid var(--accent-2); outline-offset: 2px; }
 .demo-credential { display: grid; gap: 6px; border: 1px solid rgba(86, 194, 163, 0.35); border-radius: 8px; padding: 14px; background: rgba(86, 194, 163, 0.08); color: var(--muted); margin-bottom: 16px; }
 .demo-credential strong { color: var(--text); }
 .demo-credential code { color: var(--accent); font-weight: 850; }
