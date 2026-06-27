@@ -1,9 +1,12 @@
 #!/usr/bin/env python3
 import argparse
+import hashlib
 import json
 import os
 import platform
 import shutil
+import subprocess
+import tempfile
 import time
 import urllib.error
 import urllib.request
@@ -14,7 +17,7 @@ try:
     # binary reports the exact released version (used for channel update checks).
     from _agent_version import VERSION as AGENT_VERSION
 except Exception:
-    AGENT_VERSION = "0.2.0-beta.2"  # dev fallback; build injects the real version
+    AGENT_VERSION = "0.2.0-beta.3"  # dev fallback; build injects the real version
 DEFAULT_CONFIG_PATHS = [
     Path(os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG", "")) if os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG") else None,
     Path.home() / ".mcpworld" / "config.json",
@@ -118,6 +121,64 @@ def check_for_update(server, manifest_url=None, current=AGENT_VERSION):
     decision = update_decision(current, fetch_manifest(url))
     decision["manifest_url"] = url
     return decision
+
+
+def verify_sha256(data, expected):
+    """expected 가 비어 있으면 검증 생략(True). 아니면 대소문자 무시 일치 여부."""
+    if not expected:
+        return True
+    return hashlib.sha256(data).hexdigest().lower() == str(expected).strip().lower()
+
+
+def self_update(decision, launch=True):
+    """인스톨러 다운로드 -> sha256 검증 -> 사일런트 실행. (per-user, UAC 불필요)
+
+    설치 후 mcpworld-agent.exe 가 교체되므로, 호출 측은 에이전트를 종료해 인스톨러가
+    파일을 바꿀 수 있게 한다(런처/시작프로그램이 재기동). 검증 실패 시 RuntimeError."""
+    url = decision.get("asset_url")
+    if not url:
+        raise RuntimeError("매니페스트에 설치 자산 URL이 없습니다.")
+    dest = Path(tempfile.gettempdir()) / "MCPWorld-Agent-Setup.exe"
+    with urllib.request.urlopen(
+        urllib.request.Request(url, headers={"User-Agent": f"MCPWorld-Agent/{AGENT_VERSION}"}),
+        timeout=120,
+    ) as res:
+        data = res.read()
+    if not verify_sha256(data, decision.get("sha256")):
+        raise RuntimeError("설치 파일 sha256 불일치 — 업데이트 중단(무결성 실패).")
+    dest.write_bytes(data)
+    print(f"[update] 다운로드+검증 완료: {dest} ({len(data)} bytes)")
+    if launch:
+        subprocess.Popen([str(dest), "/VERYSILENT", "/SUPPRESSMSGBOXES", "/NORESTART"])
+        print("[update] 사일런트 인스톨러 실행 — 에이전트를 종료합니다(런처가 재기동).")
+    return str(dest)
+
+
+def check_and_maybe_update(server, manifest_url=None, auto=False):
+    """기동/주기 호출용: 업데이트 감지 시 알림. forced + auto 면 자기수정 실행 후 종료 신호.
+
+    반환: True 이면 자기수정을 실행했으니 호출 측이 프로세스를 종료해야 함."""
+    try:
+        decision = check_for_update(server, manifest_url)
+    except Exception as exc:  # 업데이트 체크는 best-effort — 본 기능을 막지 않음
+        print(f"[update] 체크 실패(무시): {exc}")
+        return False
+    if not decision.get("update_available"):
+        return False
+    print(
+        f"[update] 새 버전 있음: {decision['current']} -> {decision['target']} "
+        f"(forced={decision['forced']})"
+    )
+    if decision.get("forced") and auto:
+        print("[update] 최소버전 미만 + 자동 업데이트(MCPWORLD_AUTO_UPDATE) -> 자기수정 진행")
+        try:
+            self_update(decision)
+            return True
+        except Exception as exc:
+            print(f"[update] 자기수정 실패(계속 실행): {exc}")
+            return False
+    print("[update] 적용하려면 --self-update 로 실행하거나 새 인스톨러를 받으세요.")
+    return False
 
 
 def load_local_mcp_config(config_path=None):
@@ -317,14 +378,25 @@ def main():
     parser.add_argument("--poll-interval", type=int, default=0, help="Poll continuously every N seconds. Use 0 to only register.")
     parser.add_argument("--version", action="store_true", help="Print the agent version and exit.")
     parser.add_argument("--check-update", action="store_true", help="Check the stable channel for a newer agent and exit.")
+    parser.add_argument("--self-update", action="store_true", help="Download and apply the latest stable agent, then exit.")
+    parser.add_argument("--no-update-check", action="store_true", help="Disable the startup/periodic update check.")
     parser.add_argument("--manifest-url", default="", help="Override the update manifest URL (default {server}/release/stable.json).")
     args = parser.parse_args()
+    manifest_url = args.manifest_url or None
+    auto_update = os.environ.get("MCPWORLD_AUTO_UPDATE", "").strip().lower() in ("1", "true", "yes")
 
     if args.version:
         print(AGENT_VERSION)
         return
     if args.check_update:
-        print(json.dumps(check_for_update(args.server, args.manifest_url or None), ensure_ascii=False, indent=2))
+        print(json.dumps(check_for_update(args.server, manifest_url), ensure_ascii=False, indent=2))
+        return
+    if args.self_update:
+        decision = check_for_update(args.server, manifest_url)
+        if not decision.get("update_available"):
+            print(f"이미 최신입니다 ({decision['current']}).")
+            return
+        self_update(decision)
         return
     if not args.email:
         parser.error("--email or MCPWORLD_AGENT_EMAIL is required")
@@ -338,15 +410,24 @@ def main():
     print(json.dumps(response, ensure_ascii=False, indent=2))
     agent_id = response.get("agentId") or args.agent_id
 
+    if not args.no_update_check:
+        if check_and_maybe_update(args.server, manifest_url, auto=auto_update):
+            return  # 자기수정 실행됨 -> 인스톨러가 파일을 교체하도록 종료
+
     if args.poll_once:
         poll_once(args.server, args.email, agent_id, local_config)
         return
 
     if args.poll_interval > 0:
         print(f"Polling {args.server.rstrip('/')} every {args.poll_interval}s as {agent_id}.")
+        next_update_check = time.time() + 3600  # 주기 업데이트 체크(1시간)
         while True:
             poll_once(args.server, args.email, agent_id, local_config)
             time.sleep(args.poll_interval)
+            if not args.no_update_check and time.time() >= next_update_check:
+                next_update_check = time.time() + 3600
+                if check_and_maybe_update(args.server, manifest_url, auto=auto_update):
+                    return
         return
 
     print("Agent registration complete. Use --poll-once or --poll-interval 5 to receive VPS tool calls.")

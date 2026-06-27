@@ -57,6 +57,16 @@ def test_not_forced_at_or_above_minimum():
     assert d["forced"] is False
 
 
+def test_verify_sha256():
+    import hashlib
+    data = b"installer-bytes"
+    good = hashlib.sha256(data).hexdigest()
+    assert agent.verify_sha256(data, good) is True
+    assert agent.verify_sha256(data, good.upper()) is True  # case-insensitive
+    assert agent.verify_sha256(data, "deadbeef") is False
+    assert agent.verify_sha256(data, "") is True  # no expected -> skip verification
+
+
 def test_manifest_url_resolution():
     server = "https://www.tornado616.cloud/mcpworld"
     assert agent.manifest_url_for(server) == "https://www.tornado616.cloud/mcpworld/release/stable.json"
