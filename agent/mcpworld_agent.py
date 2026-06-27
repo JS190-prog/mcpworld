@@ -9,7 +9,12 @@ import urllib.error
 import urllib.request
 from pathlib import Path
 
-AGENT_VERSION = "0.2.0-beta.1"
+try:
+    # Stamped by scripts/build_agent_release.ps1 at build time so the shipped
+    # binary reports the exact released version (used for channel update checks).
+    from _agent_version import VERSION as AGENT_VERSION
+except Exception:
+    AGENT_VERSION = "0.2.0-beta.2"  # dev fallback; build injects the real version
 DEFAULT_CONFIG_PATHS = [
     Path(os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG", "")) if os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG") else None,
     Path.home() / ".mcpworld" / "config.json",

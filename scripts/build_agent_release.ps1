@@ -52,12 +52,22 @@ New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
 Compress-Archive -Force -Path $AgentPy,$InstallPs1,$AgentConfigExample -DestinationPath $AgentZip
 
+# Stamp the exact build version into the agent so the shipped binary reports it
+# (channel update checks compare AGENT_VERSION against the manifest version).
+$AgentVersionFile = Join-Path $Root "agent\_agent_version.py"
+Set-Content -LiteralPath $AgentVersionFile -Value "VERSION = `"$Version`"`n" -Encoding UTF8
+
 $VenvDir = Join-Path $BuildDir "venv"
 python -m venv $VenvDir
 $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 & $VenvPython -m pip install --upgrade pip
 & $VenvPython -m pip install pyinstaller
-& $VenvPython -m PyInstaller --onefile --name mcpworld-agent --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work") --specpath $BuildDir $AgentPy
+try {
+  & $VenvPython -m PyInstaller --onefile --name mcpworld-agent --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work") --specpath $BuildDir --paths (Join-Path $Root "agent") $AgentPy
+} finally {
+  # Keep the source tree clean; dev runs use the in-file fallback version.
+  Remove-Item -LiteralPath $AgentVersionFile -Force -ErrorAction SilentlyContinue
+}
 
 $AgentExe = Join-Path $DistDir "mcpworld-agent.exe"
 if (!(Test-Path -LiteralPath $AgentExe)) {
