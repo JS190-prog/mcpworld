@@ -50,6 +50,76 @@ def post_json(url, payload):
         return json.loads(res.read().decode("utf-8"))
 
 
+# --------------------------------------------------------------------------- #
+# 자동 업데이트 엔진 (stable 채널 매니페스트 폴링 -> 버전 비교)
+# 순수 함수(_version_key/update_decision)는 단위 테스트 대상.
+# --------------------------------------------------------------------------- #
+def _version_key(version):
+    """'0.2.0-beta.2' -> 비교 가능한 튜플. 안정판(pre 없음)이 같은 코어의 prerelease보다 높다."""
+    version = str(version or "").strip().lstrip("v")
+    core, _, pre = version.partition("-")
+    nums = []
+    for part in core.split("."):
+        try:
+            nums.append(int(part))
+        except ValueError:
+            nums.append(0)
+    while len(nums) < 3:
+        nums.append(0)
+    if not pre:
+        return (nums[0], nums[1], nums[2], 1, ())  # 안정판: 4번째 1 (prerelease보다 높음)
+    pre_key = []
+    for token in pre.replace("-", ".").split("."):
+        if token.isdigit():
+            pre_key.append((0, int(token), ""))  # 숫자 식별자 < 영문 식별자 (semver)
+        else:
+            pre_key.append((1, 0, token))
+    return (nums[0], nums[1], nums[2], 0, tuple(pre_key))
+
+
+def update_decision(current, manifest):
+    """현재 버전 + stable 매니페스트 -> 업데이트 판단(순수). forced = 최소버전 미만."""
+    target = str(manifest.get("version", "")).strip()
+    minimum = str(manifest.get("minimumAgentVersion", target)).strip()
+    cur_k = _version_key(current)
+    assets = manifest.get("assets", {}) or {}
+    exe = assets.get("exe", {}) or {}
+    return {
+        "current": current,
+        "target": target,
+        "minimum": minimum,
+        "update_available": bool(target) and _version_key(target) > cur_k,
+        "forced": bool(minimum) and cur_k < _version_key(minimum),
+        "asset_url": exe.get("url"),
+        "sha256": exe.get("sha256"),
+    }
+
+
+def manifest_url_for(server, override=None):
+    if override:
+        return override
+    env = os.environ.get("MCPWORLD_UPDATE_MANIFEST_URL")
+    if env:
+        return env
+    return f"{server.rstrip('/')}/release/stable.json"
+
+
+def fetch_manifest(url):
+    req = urllib.request.Request(
+        url,
+        headers={"User-Agent": f"MCPWorld-Agent/{AGENT_VERSION}", "Accept": "application/json"},
+    )
+    with urllib.request.urlopen(req, timeout=15) as res:
+        return json.loads(res.read().decode("utf-8"))
+
+
+def check_for_update(server, manifest_url=None, current=AGENT_VERSION):
+    url = manifest_url_for(server, manifest_url)
+    decision = update_decision(current, fetch_manifest(url))
+    decision["manifest_url"] = url
+    return decision
+
+
 def load_local_mcp_config(config_path=None):
     paths = [Path(config_path)] if config_path else [path for path in DEFAULT_CONFIG_PATHS if path]
     for path in paths:
@@ -246,10 +316,15 @@ def main():
     parser.add_argument("--poll-once", action="store_true", help="Fetch and execute one queued tool call, then exit.")
     parser.add_argument("--poll-interval", type=int, default=0, help="Poll continuously every N seconds. Use 0 to only register.")
     parser.add_argument("--version", action="store_true", help="Print the agent version and exit.")
+    parser.add_argument("--check-update", action="store_true", help="Check the stable channel for a newer agent and exit.")
+    parser.add_argument("--manifest-url", default="", help="Override the update manifest URL (default {server}/release/stable.json).")
     args = parser.parse_args()
 
     if args.version:
         print(AGENT_VERSION)
+        return
+    if args.check_update:
+        print(json.dumps(check_for_update(args.server, args.manifest_url or None), ensure_ascii=False, indent=2))
         return
     if not args.email:
         parser.error("--email or MCPWORLD_AGENT_EMAIL is required")
