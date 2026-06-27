@@ -25,13 +25,13 @@ configureAgentDownloadLink();
 
 
 const connectorTools = [
-  { label: 'Word', versionName: 'Microsoft Word / Microsoft 365', slug: 'word', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE' },
-  { label: 'PowerPoint', versionName: 'Microsoft PowerPoint / Microsoft 365', slug: 'powerpoint', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE' },
-  { label: 'Excel', versionName: 'Microsoft Excel / Microsoft 365', slug: 'excel', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE' },
-  { label: 'CAD / ZWCAD', versionName: 'ZWCAD 2025', slug: 'cad', executablePath: 'C:\\Program Files\\ZWSOFT\\ZWCAD 2025\\ZWCAD.exe' },
-  { label: 'HWP', versionName: 'Hancom Office HWP', slug: 'hwp', executablePath: 'C:\\Program Files (x86)\\Hnc\\Office\\Hwp.exe' },
-  { label: 'Photoshop', versionName: 'Adobe Photoshop', slug: 'photoshop', executablePath: 'C:\\Program Files\\Adobe\\Adobe Photoshop\\Photoshop.exe' },
   { label: 'Blender', versionName: 'Blender', slug: 'blender', executablePath: 'C:\\Program Files\\Blender Foundation\\Blender\\blender.exe' },
+  { label: 'CAD / ZWCAD', versionName: 'ZWCAD 2025', slug: 'cad', executablePath: 'C:\\Program Files\\ZWSOFT\\ZWCAD 2025\\ZWCAD.exe' },
+  { label: 'Photoshop', versionName: 'Adobe Photoshop', slug: 'photoshop', executablePath: 'C:\\Program Files\\Adobe\\Adobe Photoshop\\Photoshop.exe' },
+  { label: 'HWP', versionName: 'Hancom Office HWP 2024', slug: 'hwp', executablePath: 'C:\\Program Files (x86)\\Hnc\\Office\\Hwp.exe' },
+  { label: 'Word', versionName: 'Microsoft Word / Microsoft 365', slug: 'word', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\WINWORD.EXE' },
+  { label: 'Excel', versionName: 'Microsoft Excel / Microsoft 365', slug: 'excel', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\EXCEL.EXE' },
+  { label: 'PowerPoint', versionName: 'Microsoft PowerPoint / Microsoft 365', slug: 'powerpoint', executablePath: 'C:\\Program Files\\Microsoft Office\\root\\Office16\\POWERPNT.EXE' },
   { label: 'Local Code', versionName: 'Local Code MCP · 파일 편집 (데스크톱 앱 불필요)', slug: 'localcode', executablePath: '로컬 코드 MCP 서버 (허용 폴더 내 파일 편집)' },
   { label: 'OpenCrab Ingest', versionName: 'OpenCrab MCP · 온톨로지/문서 인제스트', slug: 'opencrab', executablePath: 'OpenCrab MCP 서버 (예: 127.0.0.1:18006/mcp)' }
 ];

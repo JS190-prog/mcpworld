@@ -175,6 +175,25 @@ def test_opencrab_ingest_is_a_connector():
         shutil.rmtree(root, ignore_errors=True)
 
 
+def test_connector_catalog_matches_program_display_order():
+    root, db_path = temp_db_path()
+    try:
+        api = load_api(db_path)
+        assert [item["slug"] for item in api.CONNECTOR_CATALOG] == [
+            "blender",
+            "cad",
+            "photoshop",
+            "hwp",
+            "word",
+            "excel",
+            "powerpoint",
+            "localcode",
+            "opencrab",
+        ]
+    finally:
+        shutil.rmtree(root, ignore_errors=True)
+
+
 if __name__ == "__main__":
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
