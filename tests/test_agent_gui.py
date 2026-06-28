@@ -46,8 +46,43 @@ def test_dashboard_url():
     assert gui.dashboard_url("").endswith("/dashboard.html")
 
 
+def test_mask_token():
+    assert gui.mask_token("") == ""
+    assert gui.mask_token("short") == "저장됨"
+    masked = gui.mask_token("agent.usr.123.abcdefghij")
+    assert masked.startswith("agent.usr.") and "(저장됨)" in masked
+
+
+def test_ensure_local_config_creates_when_missing(tmp_path):
+    target = tmp_path / "config.json"
+    assert not target.exists()
+    gui.ensure_local_config(target)
+    assert target.exists()
+    import json
+    data = json.loads(target.read_text(encoding="utf-8"))
+    assert "mcps" in data  # valid config (example or minimal default)
+
+
+def test_singleton_acquire_and_forward():
+    probe = socket.socket()
+    probe.bind(("127.0.0.1", 0))
+    port = probe.getsockname()[1]
+    probe.close()
+    role, srv = gui.acquire_singleton(port)
+    assert role == "primary" and srv is not None
+    try:
+        role2, srv2 = gui.acquire_singleton(port)  # second instance sees it taken
+        assert role2 == "secondary" and srv2 is None
+        assert gui.forward_to_primary("mcpworld://connect?token=x", port) is True
+    finally:
+        srv.close()
+    assert gui.forward_to_primary("PING", port) is False  # nobody listening now
+
+
 if __name__ == "__main__":
     test_mcp_reachable_open_and_closed()
     test_status_text()
     test_dashboard_url()
+    test_mask_token()
+    test_singleton_acquire_and_forward()
     print("PASS agent GUI helper tests")
