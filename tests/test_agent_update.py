@@ -78,8 +78,33 @@ def test_manifest_url_resolution():
         del os.environ["MCPWORLD_UPDATE_MANIFEST_URL"]
 
 
+def test_parse_connect_url():
+    d = agent.parse_connect_url(
+        "mcpworld://connect?server=https%3A%2F%2Fx%2Fmcpworld&token=agent.u.1.sig&agentId=a1"
+    )
+    assert d == {"server": "https://x/mcpworld", "token": "agent.u.1.sig", "agentId": "a1"}
+    assert agent.parse_connect_url("mcpworld://connect?token=abc") == {"token": "abc"}
+    assert agent.parse_connect_url("https://evil/connect?token=abc") == {}  # wrong scheme
+
+
+def test_agent_creds_roundtrip(tmp_path):
+    p = tmp_path / "agent.json"
+    agent.save_agent_creds({"server": "https://s", "token": "t1", "agentId": ""}, path=p)
+    loaded = agent.load_agent_creds(p)
+    assert loaded["server"] == "https://s" and loaded["token"] == "t1"
+    assert "agentId" not in loaded  # empty values are not persisted
+    agent.save_agent_creds({"agentId": "a9"}, path=p)  # merge update
+    after = agent.load_agent_creds(p)
+    assert after["agentId"] == "a9" and after["token"] == "t1"  # existing preserved
+
+
 if __name__ == "__main__":
+    import tempfile
     for name, fn in list(globals().items()):
         if name.startswith("test_") and callable(fn):
-            fn()
+            if "tmp_path" in fn.__code__.co_varnames:
+                with tempfile.TemporaryDirectory() as d:
+                    fn(Path(d))
+            else:
+                fn()
     print("PASS agent update engine tests")

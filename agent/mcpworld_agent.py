@@ -6,9 +6,11 @@ import os
 import platform
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 import urllib.error
+import urllib.parse
 import urllib.request
 from pathlib import Path
 
@@ -18,6 +20,8 @@ try:
     from _agent_version import VERSION as AGENT_VERSION
 except Exception:
     AGENT_VERSION = "0.2.0-beta.3"  # dev fallback; build injects the real version
+DEFAULT_SERVER = "https://www.tornado616.cloud/mcpworld"
+AGENT_CREDS_PATH = Path.home() / ".mcpworld" / "agent.json"
 DEFAULT_CONFIG_PATHS = [
     Path(os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG", "")) if os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG") else None,
     Path.home() / ".mcpworld" / "config.json",
@@ -337,10 +341,39 @@ def run_adapter(tool_name, arguments, config=None):
     raise ValueError(f"Unsupported MCPWorld tool: {tool_name}")
 
 
-def poll_once(server, email, agent_id, config):
+# --------------------------------------------------------------------------- #
+# 웹 주도 온보딩: mcpworld:// 딥링크 + 자격 저장
+# --------------------------------------------------------------------------- #
+def load_agent_creds(path=AGENT_CREDS_PATH):
+    try:
+        data = json.loads(Path(path).read_text(encoding="utf-8"))
+        return data if isinstance(data, dict) else {}
+    except Exception:
+        return {}
+
+
+def save_agent_creds(creds, path=AGENT_CREDS_PATH):
+    p = Path(path)
+    p.parent.mkdir(parents=True, exist_ok=True)
+    existing = load_agent_creds(p)
+    existing.update({k: v for k, v in creds.items() if v})
+    p.write_text(json.dumps(existing, ensure_ascii=False, indent=2), encoding="utf-8")
+    return existing
+
+
+def parse_connect_url(url):
+    """'mcpworld://connect?server=..&token=..&agentId=..' -> dict (순수, 테스트 대상)."""
+    parsed = urllib.parse.urlparse(url)
+    if parsed.scheme != "mcpworld":
+        return {}
+    qs = urllib.parse.parse_qs(parsed.query)
+    return {key: qs[key][0] for key in ("server", "token", "agentId") if qs.get(key)}
+
+
+def poll_once(server, auth, agent_id, config):
     call_response = post_json(
         f"{server.rstrip('/')}/api/agent/poll",
-        {"email": email, "agentId": agent_id},
+        {**auth, "agentId": agent_id},
     )
     call = call_response.get("call")
     if not call:
@@ -368,9 +401,21 @@ def poll_once(server, email, agent_id, config):
 
 
 def main():
+    # 프로토콜 핸들러: mcpworld-agent.exe "mcpworld://connect?server=..&token=.."
+    # 대시보드 '이 PC 연결' 클릭 -> OS가 이 형태로 에이전트를 실행 -> 자격 저장 후 폴링.
+    if len(sys.argv) > 1 and sys.argv[1].startswith("mcpworld://"):
+        link = parse_connect_url(sys.argv[1])
+        if not link.get("token"):
+            print("연결 URL에 token이 없습니다.")
+            return
+        save_agent_creds(link)
+        print(f"[connect] 자격 저장 완료 (server={link.get('server') or DEFAULT_SERVER}). 폴링을 시작합니다.")
+        sys.argv = [sys.argv[0], "--poll-interval", "5"]
+
     parser = argparse.ArgumentParser(description="MCP World local agent bootstrap")
-    parser.add_argument("--server", default="https://www.tornado616.cloud/mcpworld")
+    parser.add_argument("--server", default="")
     parser.add_argument("--email", default=os.environ.get("MCPWORLD_AGENT_EMAIL", ""))
+    parser.add_argument("--token", default=os.environ.get("MCPWORLD_AGENT_TOKEN", ""), help="Account agent token (dashboard 'Connect this PC').")
     parser.add_argument("--device-name", default=platform.node() or "Windows PC")
     parser.add_argument("--agent-id", default="")
     parser.add_argument("--mcp-config", default=os.environ.get("MCPWORLD_LOCAL_MCP_CONFIG", ""), help="Path to the local MCP World config.json.")
@@ -382,6 +427,10 @@ def main():
     parser.add_argument("--no-update-check", action="store_true", help="Disable the startup/periodic update check.")
     parser.add_argument("--manifest-url", default="", help="Override the update manifest URL (default {server}/release/stable.json).")
     args = parser.parse_args()
+
+    creds = load_agent_creds()
+    server = args.server or creds.get("server") or DEFAULT_SERVER
+    token = args.token or creds.get("token") or ""
     manifest_url = args.manifest_url or None
     auto_update = os.environ.get("MCPWORLD_AUTO_UPDATE", "").strip().lower() in ("1", "true", "yes")
 
@@ -389,44 +438,51 @@ def main():
         print(AGENT_VERSION)
         return
     if args.check_update:
-        print(json.dumps(check_for_update(args.server, manifest_url), ensure_ascii=False, indent=2))
+        print(json.dumps(check_for_update(server, manifest_url), ensure_ascii=False, indent=2))
         return
     if args.self_update:
-        decision = check_for_update(args.server, manifest_url)
+        decision = check_for_update(server, manifest_url)
         if not decision.get("update_available"):
             print(f"이미 최신입니다 ({decision['current']}).")
             return
         self_update(decision)
         return
-    if not args.email:
-        parser.error("--email or MCPWORLD_AGENT_EMAIL is required")
+
+    if token:
+        auth = {"token": token}
+    elif args.email:
+        auth = {"email": args.email}
+    else:
+        parser.error("로그인 연결이 필요합니다: 대시보드 '이 PC 연결'(mcpworld:// 링크) 또는 --token / --email.")
 
     local_config = load_local_mcp_config(args.mcp_config or None)
 
     response = post_json(
-        f"{args.server.rstrip('/')}/api/agent/register",
-        {"email": args.email, "deviceName": args.device_name, "agentId": args.agent_id},
+        f"{server.rstrip('/')}/api/agent/register",
+        {**auth, "deviceName": args.device_name, "agentId": args.agent_id or creds.get("agentId", "")},
     )
     print(json.dumps(response, ensure_ascii=False, indent=2))
     agent_id = response.get("agentId") or args.agent_id
+    if token and agent_id:  # 다음 실행을 위해 agentId 보존
+        save_agent_creds({"server": server, "token": token, "agentId": agent_id})
 
     if not args.no_update_check:
-        if check_and_maybe_update(args.server, manifest_url, auto=auto_update):
+        if check_and_maybe_update(server, manifest_url, auto=auto_update):
             return  # 자기수정 실행됨 -> 인스톨러가 파일을 교체하도록 종료
 
     if args.poll_once:
-        poll_once(args.server, args.email, agent_id, local_config)
+        poll_once(server, auth, agent_id, local_config)
         return
 
     if args.poll_interval > 0:
-        print(f"Polling {args.server.rstrip('/')} every {args.poll_interval}s as {agent_id}.")
+        print(f"Polling {server.rstrip('/')} every {args.poll_interval}s as {agent_id}.")
         next_update_check = time.time() + 3600  # 주기 업데이트 체크(1시간)
         while True:
-            poll_once(args.server, args.email, agent_id, local_config)
+            poll_once(server, auth, agent_id, local_config)
             time.sleep(args.poll_interval)
             if not args.no_update_check and time.time() >= next_update_check:
                 next_update_check = time.time() + 3600
-                if check_and_maybe_update(args.server, manifest_url, auto=auto_update):
+                if check_and_maybe_update(server, manifest_url, auto=auto_update):
                     return
         return
 
