@@ -168,8 +168,8 @@ function renderIssues(selectedId = issues[0]?.id) {
   const visibleIssues = getVisibleIssues();
   issueList.innerHTML = '';
   if (!visibleIssues.length) {
-    issueList.innerHTML = '<p class="muted">No active operational issues.</p>';
-    if (issueDetail) issueDetail.innerHTML = '<p class="muted">Live checks are clear.</p>';
+    issueList.innerHTML = '<p class="muted">현재 운영자가 처리할 문제가 없습니다.</p>';
+    if (issueDetail) issueDetail.innerHTML = '<p class="muted">실시간 점검 결과가 정상입니다.</p>';
     return;
   }
   visibleIssues.forEach((issue) => {
@@ -189,22 +189,102 @@ function renderIssues(selectedId = issues[0]?.id) {
   renderIssueDetail(selectedId);
 }
 
+function issuePlaybook(issue) {
+  const defaults = {
+    decision: '영향 대상과 최근 로그를 확인한 뒤 정상 사용이면 유지하고, 의심스러운 사용이면 계정 제한 또는 세션 종료를 실행하세요.',
+    steps: [
+      '오른쪽 상세의 영향 범위와 원인 추정을 확인합니다.',
+      '아래 로그/세션/사용자 표에서 같은 대상이 반복되는지 확인합니다.',
+      '필요한 행의 조치 버튼을 눌러 처리한 뒤 Action Feed와 로그에 성공 기록이 남았는지 확인합니다.'
+    ],
+    buttons: [
+      { label: '로그 표로 이동', section: 'logs' },
+      { label: '세션 표로 이동', section: 'sessions' }
+    ],
+    supportedActions: ['사용자 표: Limit, End sessions', '세션 표: End, Extend', '도구 상태 표: End sessions, Review']
+  };
+  const playbooks = {
+    'ops-expiring-sessions': {
+      decision: '정상 사용자가 아직 작업 중이면 세션을 연장하고, 사용자가 작업을 끝냈거나 의심스러우면 세션을 종료합니다.',
+      steps: [
+        '활성 세션 표로 이동해 만료 시간이 임박한 행을 확인합니다.',
+        '사용자가 정상 작업 중이면 해당 세션 행의 Extend를 누릅니다.',
+        '알 수 없는 사용자거나 작업 종료 상태면 End를 눌러 연결을 닫습니다.',
+        '사용자에게 새 연결이 필요하면 대시보드에서 링크를 다시 생성하도록 안내합니다.'
+      ],
+      buttons: [{ label: '활성 세션 표로 이동', section: 'sessions' }],
+      supportedActions: ['세션 표: Extend', '세션 표: End']
+    },
+    'ops-stale-tool-calls': {
+      decision: '도구 호출이 오래 대기 중이면 Agent 연결 상태를 확인하고, 멈춘 세션은 종료해서 새 링크로 다시 연결하게 합니다.',
+      steps: [
+        '도구 상태 표에서 대기/실행 수가 높은 도구를 확인합니다.',
+        '같은 도구의 최근 오류가 반복되면 해당 도구 행의 End sessions를 눌러 멈춘 연결을 정리합니다.',
+        '사용자에게 MCPWorld Agent를 다시 열고 도구 연결 링크를 재생성하도록 안내합니다.',
+        '정리 후 새 호출이 queued/running에 계속 쌓이는지 새로고침으로 확인합니다.'
+      ],
+      buttons: [
+        { label: '도구 상태 표로 이동', section: 'tool-health' },
+        { label: '활성 세션 표로 이동', section: 'sessions' }
+      ],
+      supportedActions: ['도구 상태 표: End sessions', '세션 표: End']
+    },
+    'ops-offline-agents': {
+      decision: 'Agent가 오프라인이면 서버에서 강제로 복구하기보다 사용자 PC의 Agent 실행 상태를 먼저 확인시켜야 합니다.',
+      steps: [
+        '도구 상태 표와 활성 세션 표에서 영향 받는 사용자와 도구를 확인합니다.',
+        '사용자에게 MCPWorld Agent가 실행 중인지, 방화벽/백신이 막지 않는지 확인하도록 안내합니다.',
+        '오래된 세션은 세션 표에서 End를 눌러 정리합니다.',
+        '사용자가 Agent를 다시 실행한 뒤 대시보드에서 새 연결 링크를 생성하도록 안내합니다.'
+      ],
+      buttons: [
+        { label: '도구 상태 표로 이동', section: 'tool-health' },
+        { label: '활성 세션 표로 이동', section: 'sessions' }
+      ],
+      supportedActions: ['세션 표: End', '도구 상태 표: Review']
+    },
+    'ops-recent-failures': {
+      decision: '최근 실패 이벤트는 먼저 로그에서 대상을 확인하고, 같은 사용자/세션에서 반복되면 제한 또는 세션 종료를 실행합니다.',
+      steps: [
+        '로그와 조치 이력 표로 이동해 Error/Warning 행의 대상과 내용을 확인합니다.',
+        '인증 실패가 반복되는 계정은 사용자 표에서 Limit를 누릅니다.',
+        '특정 사용자 세션에서 호출 실패가 반복되면 사용자 표의 End sessions 또는 세션 표의 End를 누릅니다.',
+        '조치 후 같은 오류가 계속 남는지 새로고침으로 확인합니다.'
+      ],
+      buttons: [
+        { label: '로그 표로 이동', section: 'logs' },
+        { label: '사용자 표로 이동', section: 'users' }
+      ],
+      supportedActions: ['사용자 표: Limit', '사용자 표: End sessions', '세션 표: End']
+    }
+  };
+  return { ...defaults, ...(playbooks[issue.id] || {}) };
+}
+
 function renderIssueDetail(issueId) {
   const issue = issues.find((item) => item.id === issueId) || getVisibleIssues()[0];
   if (!issueDetail || !issue) return;
+  const playbook = issuePlaybook(issue);
   issueDetail.innerHTML = `
-    <p class="eyebrow">Selected Issue</p>
+    <p class="eyebrow">Operator Playbook</p>
     <h3>${issue.title}</h3>
     <dl class="ops-definition">
-      <dt>Severity</dt><dd>${severityLabel(issue.severity)}</dd>
-      <dt>Owner</dt><dd>${issue.owner}</dd>
-      <dt>Impact</dt><dd>${issue.impact}</dd>
-      <dt>Likely Cause</dt><dd>${issue.cause}</dd>
-      <dt>Suggested Action</dt><dd>${issue.action}</dd>
+      <dt>위험도</dt><dd>${severityLabel(issue.severity)}</dd>
+      <dt>담당 영역</dt><dd>${issue.owner}</dd>
+      <dt>영향 범위</dt><dd>${issue.impact}</dd>
+      <dt>원인 추정</dt><dd>${issue.cause}</dd>
+      <dt>판단 기준</dt><dd>${playbook.decision}</dd>
     </dl>
+    <div class="operator-steps">
+      <strong>관리자가 할 일</strong>
+      <ol>${playbook.steps.map((step) => `<li>${step}</li>`).join('')}</ol>
+    </div>
+    <div class="operator-steps">
+      <strong>실제로 누를 수 있는 조치</strong>
+      <ul>${playbook.supportedActions.map((action) => `<li>${action}</li>`).join('')}</ul>
+    </div>
     <div class="ops-actions">
-      <button class="btn btn-primary" data-action="resolve-issue" data-issue="${issue.id}" type="button">Mark reviewed</button>
-      <button class="btn btn-secondary" data-action="open-user" data-owner="${issue.owner}" type="button">Find owner</button>
+      ${playbook.buttons.map((button) => `<button class="btn btn-secondary" data-ui-action="focus-section" data-section="${button.section}" type="button">${button.label}</button>`).join('')}
     </div>
   `;
 }
@@ -441,8 +521,18 @@ adminTokenInput?.addEventListener('keydown', (event) => {
 });
 
 document.addEventListener('click', async (event) => {
-  const target = event.target.closest('[data-action], [data-runbook]');
+  const target = event.target.closest('[data-action], [data-runbook], [data-ui-action]');
   if (!target) return;
+  const uiAction = target.dataset.uiAction;
+  if (uiAction === 'focus-section') {
+    const sectionId = target.dataset.section;
+    const section = sectionId ? document.querySelector(`#${escapeSelector(sectionId)}`) : null;
+    if (section) {
+      section.scrollIntoView({ behavior: 'smooth', block: 'start' });
+      addAction(`Moved to ${sectionId} for the selected issue.`);
+    }
+    return;
+  }
   const action = target.dataset.action || target.dataset.runbook;
   const user = target.dataset.user;
   const session = target.dataset.session;

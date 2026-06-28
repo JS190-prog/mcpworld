@@ -297,6 +297,17 @@ input, select { width: 100%; border: 1px solid var(--line); border-radius: 8px; 
 .ops-definition dd { margin: 0; color: var(--text); line-height: 1.55; }
 .ops-actions,
 .table-actions { display: flex; gap: 8px; flex-wrap: wrap; }
+.operator-steps {
+  margin: 14px 0;
+  border: 1px solid rgba(86, 194, 163, 0.24);
+  border-radius: 8px;
+  padding: 14px 16px;
+  background: rgba(86, 194, 163, 0.06);
+}
+.operator-steps strong { display: block; margin-bottom: 10px; color: var(--text); }
+.operator-steps ol,
+.operator-steps ul { margin: 0; padding-left: 20px; color: var(--muted); line-height: 1.65; }
+.operator-steps li::marker { color: var(--accent); font-weight: 850; }
 .ops-table small { color: var(--muted); }
 .table-actions .btn { min-height: 34px; padding: 7px 10px; font-size: 12px; }
 .inline-control { display: flex; align-items: center; gap: 8px; min-width: 210px; }
