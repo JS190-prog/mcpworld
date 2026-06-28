@@ -19,7 +19,7 @@ try:
     # binary reports the exact released version (used for channel update checks).
     from _agent_version import VERSION as AGENT_VERSION
 except Exception:
-    AGENT_VERSION = "0.2.0-beta.5"  # dev fallback; build injects the real version
+    AGENT_VERSION = "0.2.0-beta.6"  # dev fallback; build injects the real version
 DEFAULT_SERVER = "https://www.tornado616.cloud/mcpworld"
 AGENT_CREDS_PATH = Path.home() / ".mcpworld" / "agent.json"
 DEFAULT_CONFIG_PATHS = [
