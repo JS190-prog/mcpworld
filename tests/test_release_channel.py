@@ -146,15 +146,19 @@ def test_classify_verification_feeds_gate():
     assert rc.green_streak(ledger2, "v") == 0
 
 
-def test_seeded_channel_manifests_are_consistent():
-    """The committed edge/stable seeds should be valid and same-version at rest."""
+def test_seeded_channel_manifests_are_valid():
+    """edge/stable seeds must be well-formed. edge may be AHEAD of stable when a
+    promotion is pending (that is the whole point of channels), so versions need
+    not be equal."""
     root = Path(__file__).resolve().parents[1]
     edge = rc.read_json(root / "release" / "edge.json")
     stable = rc.read_json(root / "release" / "stable.json")
     assert edge["track"] == "edge"
     assert stable["track"] == "stable"
-    assert edge["version"] == stable["version"]
-    assert set(edge["assets"]) == {"exe", "msi"}
+    for manifest in (edge, stable):
+        assert isinstance(manifest["version"], str) and "." in manifest["version"]
+        assert set(manifest["assets"]) == {"exe", "msi"}
+        assert all(manifest["assets"][k].get("sha256") for k in ("exe", "msi"))
 
 
 if __name__ == "__main__":
