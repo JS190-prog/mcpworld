@@ -298,6 +298,48 @@ def clear_auth_cookie_header() -> str:
     return f"{AUTH_COOKIE_NAME}=; Path={cookie_path()}; Max-Age=0; HttpOnly; Secure; SameSite=Lax"
 
 
+AGENT_TOKEN_PREFIX = "agent"
+
+
+def sign_agent_token(user_id: str) -> str:
+    """장수명 에이전트 토큰. 로그인 쿠키와 'agent.' 접두사로 구분(혼동 방지). TTL 없음."""
+    payload = f"{AGENT_TOKEN_PREFIX}.{user_id}.{now()}"
+    signature = hmac.new(SESSION_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
+    encoded_sig = base64.urlsafe_b64encode(signature).decode("ascii").rstrip("=")
+    return f"{payload}.{encoded_sig}"
+
+
+def verify_agent_token(value: str):
+    """유효하면 user_id, 아니면 None. 서명·접두사 검증(TTL 없음 — 장수명)."""
+    try:
+        prefix, user_id, issued_at, signature = value.split(".", 3)
+        if prefix != AGENT_TOKEN_PREFIX:
+            return None
+        payload = f"{prefix}.{user_id}.{issued_at}"
+        expected = hmac.new(SESSION_SECRET.encode("utf-8"), payload.encode("utf-8"), hashlib.sha256).digest()
+        padded = signature + "=" * (-len(signature) % 4)
+        actual = base64.urlsafe_b64decode(padded.encode("ascii"))
+        if not hmac.compare_digest(expected, actual):
+            return None
+        return user_id
+    except Exception:
+        return None
+
+
+def agent_user_from_body(db, body):
+    """register/poll 인증 해석: token 우선(서명 검증 -> user_id), 없으면 email(하위호환)."""
+    token = (body.get("token") or "").strip()
+    if token:
+        uid = verify_agent_token(token)
+        if not uid:
+            return None
+        return db.execute("select * from users where id = ?", (uid,)).fetchone()
+    email = (body.get("email") or "").strip().lower()
+    if email:
+        return db.execute("select * from users where email = ?", (email,)).fetchone()
+    return None
+
+
 def get_db():
     DB_PATH.parent.mkdir(parents=True, exist_ok=True)
     conn = sqlite3.connect(DB_PATH)
@@ -582,6 +624,8 @@ class ApiHandler(BaseHTTPRequestHandler):
             if path.startswith("/sessions/") and path.endswith("/terminate"):
                 session_id = path.split("/")[2]
                 return self.terminate_session(session_id)
+            if path == "/agent/token":
+                return self.issue_agent_token()
             if path == "/agent/register":
                 return self.register_agent()
             if path == "/agent/poll":
@@ -980,12 +1024,9 @@ class ApiHandler(BaseHTTPRequestHandler):
 
     def register_agent(self):
         body = read_body(self)
-        email = (body.get("email") or "").strip().lower()
         device = body.get("deviceName") or "Windows PC"
-        if not email:
-            return json_response(self, 400, {"ok": False, "error": "missing_email"})
         with get_db() as db:
-            user = db.execute("select * from users where email = ?", (email,)).fetchone()
+            user = agent_user_from_body(db, body)
             if not user:
                 return json_response(self, 404, {"ok": False, "error": "user_not_found"})
             agent_id = body.get("agentId") or "agent-" + secrets.token_hex(4)
@@ -993,8 +1034,16 @@ class ApiHandler(BaseHTTPRequestHandler):
                 "insert or replace into agents (id, user_id, device_name, status, last_seen_at) values (?, ?, ?, 'online', ?)",
                 (agent_id, user["id"], device, now()),
             )
-            log_event(db, email, "agent.register", agent_id, "success", f"{device} registered")
+            log_event(db, user["email"], "agent.register", agent_id, "success", f"{device} registered")
         return json_response(self, 200, {"ok": True, "agentId": agent_id, "status": "online"})
+
+    def issue_agent_token(self):
+        """로그인한 웹 사용자가 '이 PC 연결'용 장수명 에이전트 토큰을 발급받는다."""
+        user = self.auth_user()
+        if not user:
+            return json_response(self, 401, {"ok": False, "error": "not_authenticated"})
+        token = sign_agent_token(user["id"])
+        return json_response(self, 200, {"ok": True, "token": token, "server": APP_ROOT})
 
 
     def enqueue_tool_call(self):
@@ -1056,9 +1105,8 @@ class ApiHandler(BaseHTTPRequestHandler):
     def agent_poll(self):
         body = read_body(self)
         agent_id = body.get("agentId") or ""
-        email = (body.get("email") or "").strip().lower()
         with get_db() as db:
-            user = db.execute("select * from users where email = ?", (email,)).fetchone()
+            user = agent_user_from_body(db, body)
             if not user:
                 return json_response(self, 404, {"ok": False, "error": "user_not_found"})
             db.execute("update agents set status = 'online', last_seen_at = ? where id = ? and user_id = ?", (now(), agent_id, user["id"]))
