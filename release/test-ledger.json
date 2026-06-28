@@ -1,1 +1,22 @@
-{}
+{
+  "0.2.0-beta.3": [
+    {
+      "ts": 1782604827,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    },
+    {
+      "ts": 1782604831,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    },
+    {
+      "ts": 1782604834,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    }
+  ]
+}
