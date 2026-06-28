@@ -23,6 +23,9 @@
       <Component Id="AgentExe" Guid="B3C32F36-6F8C-4BF5-97B2-BA088942059B">
         <File Id="MCPWorldAgentExe" Source="$(var.DistDir)\mcpworld-agent.exe" KeyPath="yes" />
       </Component>
+      <Component Id="AgentGuiExe" Guid="D8F2C5B3-4A1E-4F69-B2C7-0E1D3A5B7C9F">
+        <File Id="MCPWorldAgentGuiExe" Source="$(var.DistDir)\MCPWorld-Agent-GUI.exe" KeyPath="yes" />
+      </Component>
       <Component Id="InstallScript" Guid="E2B78225-5B7C-4081-90EB-1BA4385095D8">
         <File Id="InstallPs1" Source="$(var.DistDir)\..\..\agent\install.ps1" KeyPath="yes" />
       </Component>
@@ -36,7 +39,7 @@
           <RegistryValue Name="URL Protocol" Type="string" Value="" />
         </RegistryKey>
         <RegistryKey Root="HKCR" Key="mcpworld\shell\open\command">
-          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]mcpworld-agent.exe&quot; &quot;%1&quot;" />
+          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]MCPWorld-Agent-GUI.exe&quot; &quot;%1&quot;" />
         </RegistryKey>
       </Component>
     </ComponentGroup>

@@ -39,6 +39,7 @@ $DistDir = Join-Path $Root "dist\agent-release"
 $BuildDir = Join-Path $Root "dist\agent-build"
 $AgentZip = Join-Path $DistDir "mcpworld-agent.zip"
 $AgentPy = Join-Path $Root "agent\mcpworld_agent.py"
+$AgentGuiPy = Join-Path $Root "agent\mcpworld_agent_gui.py"
 $InstallPs1 = Join-Path $Root "agent\install.ps1"
 $AgentConfigExample = Join-Path $Root "agent\mcpworld-mcp-config.example.json"
 $InnoScript = Join-Path $Root "installer\inno\MCPWorldAgent.iss"
@@ -50,7 +51,7 @@ Remove-Item -Recurse -Force -LiteralPath $BuildDir -ErrorAction SilentlyContinue
 New-Item -ItemType Directory -Force -Path $DistDir | Out-Null
 New-Item -ItemType Directory -Force -Path $BuildDir | Out-Null
 
-Compress-Archive -Force -Path $AgentPy,$InstallPs1,$AgentConfigExample -DestinationPath $AgentZip
+Compress-Archive -Force -Path $AgentPy,$AgentGuiPy,$InstallPs1,$AgentConfigExample -DestinationPath $AgentZip
 
 # Stamp the exact build version into the agent so the shipped binary reports it
 # (channel update checks compare AGENT_VERSION against the manifest version).
@@ -63,7 +64,10 @@ $VenvPython = Join-Path $VenvDir "Scripts\python.exe"
 & $VenvPython -m pip install --upgrade pip
 & $VenvPython -m pip install pyinstaller
 try {
+  # Headless agent (console) — CLI / service use.
   & $VenvPython -m PyInstaller --onefile --name mcpworld-agent --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work") --specpath $BuildDir --paths (Join-Path $Root "agent") $AgentPy
+  # Consumer GUI (windowed, no console) — primary double-click entry + mcpworld:// target.
+  & $VenvPython -m PyInstaller --onefile --windowed --name MCPWorld-Agent-GUI --distpath $DistDir --workpath (Join-Path $BuildDir "pyinstaller-work-gui") --specpath $BuildDir --paths (Join-Path $Root "agent") $AgentGuiPy
 } finally {
   # Keep the source tree clean; dev runs use the in-file fallback version.
   Remove-Item -LiteralPath $AgentVersionFile -Force -ErrorAction SilentlyContinue
@@ -72,6 +76,10 @@ try {
 $AgentExe = Join-Path $DistDir "mcpworld-agent.exe"
 if (!(Test-Path -LiteralPath $AgentExe)) {
   throw "Missing built agent exe: $AgentExe"
+}
+$AgentGuiExe = Join-Path $DistDir "MCPWorld-Agent-GUI.exe"
+if (!(Test-Path -LiteralPath $AgentGuiExe)) {
+  throw "Missing built agent GUI exe: $AgentGuiExe"
 }
 
 $SetupExe = Join-Path $DistDir "MCPWorld-Agent-Setup.exe"
