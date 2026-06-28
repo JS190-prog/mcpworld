@@ -1,21 +1,21 @@
 {
   "channel": "beta",
   "track": "edge",
-  "version": "0.2.0-beta.3",
-  "minimumAgentVersion": "0.2.0-beta.3",
-  "releasePage": "https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.3",
+  "version": "0.2.0-beta.4",
+  "minimumAgentVersion": "0.2.0-beta.4",
+  "releasePage": "https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.4",
   "notes": "Edge (admin test) channel. Refreshed by every agent build; promote copies this to stable.",
   "assets": {
     "exe": {
       "fileName": "MCPWorld-Agent-Setup.exe",
-      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.3/MCPWorld-Agent-Setup.exe",
-      "sha256": "5ac19e8fabf55c5f0f19bfc896394e06952d81f64519aa75c9a0c8b7c82cda88",
+      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.4/MCPWorld-Agent-Setup.exe",
+      "sha256": "6e63d8010f12175f4f840da17e53f25b2344c1f20c4cb22d5b7410a913d79a2f",
       "recommendedFor": "general Windows users"
     },
     "msi": {
       "fileName": "MCPWorld-Agent-Setup.msi",
-      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.3/MCPWorld-Agent-Setup.msi",
-      "sha256": "d7b4753a680c7bcd2ee35beb8a8155a64f68c99b7e224cead3ee38d2a7c1922e",
+      "url": "https://github.com/JS190-prog/mcpworld/releases/download/v0.2.0-beta.4/MCPWorld-Agent-Setup.msi",
+      "sha256": "c8f6f11625ffa5855ec8ed92ca5b7ccc18cd36e0acd309b27afcc89ad142e635",
       "recommendedFor": "managed enterprise deployment"
     }
   }
