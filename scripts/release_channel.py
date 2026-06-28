@@ -167,6 +167,21 @@ def _run(cmd, dry=False):
     subprocess.run(cmd, cwd=str(ROOT), check=True)
 
 
+def _bash_exe():
+    """Git Bash 경로 우선 사용(Windows에서 'bash'가 WSL로 잡혀 deploy가 깨지는 문제 회피)."""
+    override = os.environ.get("MCPWORLD_BASH")
+    if override and Path(override).exists():
+        return override
+    for cand in (
+        r"C:\Program Files\Git\bin\bash.exe",
+        r"C:\Program Files\Git\usr\bin\bash.exe",
+        r"C:\Program Files (x86)\Git\bin\bash.exe",
+    ):
+        if Path(cand).exists():
+            return cand
+    return "bash"
+
+
 def _git_dirty():
     out = subprocess.run(
         ["git", "status", "--porcelain"], cwd=str(ROOT), capture_output=True, text=True
@@ -263,7 +278,7 @@ def cmd_promote(args):
     print(f"  stable.json/latest.json -> v{args.version}, site-config 재지정")
     # 4) 재배포 (deploy.sh 가 테스트->스왑->헬스->자동롤백)
     if not args.no_deploy:
-        _run(["bash", "deploy/deploy.sh"], dry=args.dry_run)
+        _run([_bash_exe(), "deploy/deploy.sh"], dry=args.dry_run)
     print(f"승격 완료: v{args.version} -> stable (롤백본: release/stable.json.prev)")
 
 
@@ -288,7 +303,7 @@ def cmd_rollback(args):
         _run(["gh", "release", "edit", f"v{prev_version}", "--repo", args.repo, "--latest"],
              dry=args.dry_run)
     if not args.no_deploy:
-        _run(["bash", "deploy/deploy.sh"], dry=args.dry_run)
+        _run([_bash_exe(), "deploy/deploy.sh"], dry=args.dry_run)
     print(f"롤백 완료: stable -> v{prev_version}")
 
 
