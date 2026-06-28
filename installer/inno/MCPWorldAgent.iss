@@ -30,5 +30,13 @@ Source: "..\..\agent\mcpworld-mcp-config.example.json"; DestDir: "{app}"; Flags:
 Name: "{group}\MCPWorld Agent"; Filename: "{app}\{#MyAppExeName}"
 Name: "{group}\Uninstall MCPWorld Agent"; Filename: "{uninstallexe}"
 
+[Registry]
+; Register the mcpworld:// URL protocol so the web dashboard "Connect this PC"
+; button launches the agent with the connect link (per-user, HKCU = no admin).
+Root: HKCU; Subkey: "Software\Classes\mcpworld"; ValueType: string; ValueName: ""; ValueData: "URL:MCPWorld Protocol"; Flags: uninsdeletekey
+Root: HKCU; Subkey: "Software\Classes\mcpworld"; ValueType: string; ValueName: "URL Protocol"; ValueData: ""
+Root: HKCU; Subkey: "Software\Classes\mcpworld\DefaultIcon"; ValueType: string; ValueName: ""; ValueData: "{app}\{#MyAppExeName},0"
+Root: HKCU; Subkey: "Software\Classes\mcpworld\shell\open\command"; ValueType: string; ValueName: ""; ValueData: """{app}\{#MyAppExeName}"" ""%1"""
+
 [Run]
 Filename: "{app}\{#MyAppExeName}"; Parameters: "--version"; Flags: runhidden waituntilterminated

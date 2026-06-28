@@ -53,11 +53,13 @@
             <a class="btn btn-primary" href="https://github.com/JS190-prog/mcpworld/releases/tag/v0.2.0-beta.1" id="installMcpworldButton" target="_blank" rel="noopener">에이전트 다운로드</a>
             <a class="btn btn-secondary github-repo-link" href="https://github.com/JS190-prog/mcpworld" target="_blank" rel="noopener">GitHub Repo</a>
             <a class="btn btn-secondary" href="docs/beta-first-use-guide.md" target="_blank" rel="noopener">설치 안내</a>
+            <button class="btn btn-primary" id="connectThisPcButton" type="button">이 PC 연결</button>
             <button class="btn btn-secondary" id="autoBindButton" type="button">전체 등록</button>
           </div>
+          <p id="connectThisPcResult" class="form-message" role="status"></p>
           <ol class="setup-steps" aria-label="MCP 연결 순서">
             <li>에이전트를 다운로드해 설치합니다.</li>
-            <li>필요한 프로그램의 에이전트 등록 버튼을 눌러 로컬 앱과 연결합니다.</li>
+            <li><strong>이 PC 연결</strong>을 누르면 설치된 에이전트가 토큰을 받아 자동 연결됩니다(콘솔 불필요).</li>
             <li>주소 복사를 눌러 ChatGPT MCP 커넥터에 붙여 넣습니다.</li>
           </ol>
         </article>
@@ -112,6 +114,6 @@
   </footer>
 
   <script src="site-config.js"></script>
-  <script src="dashboard.js?v=20260627-program-order"></script>
+  <script src="dashboard.js?v=20260628-connect-pc"></script>
 </body>
 </html>

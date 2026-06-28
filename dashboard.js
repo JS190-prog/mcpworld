@@ -65,6 +65,36 @@ async function getApi(path) {
   return data;
 }
 
+const connectThisPcButton = document.querySelector('#connectThisPcButton');
+const connectThisPcResult = document.querySelector('#connectThisPcResult');
+
+// "이 PC 연결": 로그인 쿠키로 에이전트 토큰을 발급받아 mcpworld:// 딥링크로
+// 설치된 에이전트를 실행한다(콘솔/이메일 입력 없이 연결).
+async function connectThisPc() {
+  if (!connectThisPcButton) return;
+  connectThisPcButton.disabled = true;
+  if (connectThisPcResult) connectThisPcResult.classList.remove('error');
+  try {
+    const data = await postApi('/agent/token', {});
+    const params = new URLSearchParams({ server: data.server || '', token: data.token });
+    if (connectThisPcResult) {
+      connectThisPcResult.textContent = '설치된 에이전트를 실행 중입니다… 아무 일도 없으면 에이전트를 먼저 설치하세요.';
+    }
+    window.location.href = `mcpworld://connect?${params.toString()}`;
+  } catch (error) {
+    if (connectThisPcResult) {
+      connectThisPcResult.classList.add('error');
+      connectThisPcResult.textContent = error.message === 'not_authenticated'
+        ? '로그인이 필요합니다.'
+        : `토큰 발급 실패: ${error.message}`;
+    }
+  } finally {
+    connectThisPcButton.disabled = false;
+  }
+}
+
+connectThisPcButton?.addEventListener('click', connectThisPc);
+
 function getAppBaseUrl() {
   const pathParts = window.location.pathname.split('/').filter(Boolean);
   const appRoot = pathParts[0] === 'mcpworld' ? '/mcpworld' : '';

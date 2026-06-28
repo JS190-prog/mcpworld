@@ -29,6 +29,16 @@
       <Component Id="AgentConfigExample" Guid="84626C6E-2590-48A2-A782-E09673B76BC6">
         <File Id="AgentConfigExampleJson" Source="$(var.DistDir)\..\..\agent\mcpworld-mcp-config.example.json" KeyPath="yes" />
       </Component>
+      <Component Id="ProtocolHandler" Guid="C7E1B4A2-3F9D-4E58-A1B6-9D2C7F0E5A34">
+        <!-- mcpworld:// URL protocol so the dashboard "Connect this PC" launches the agent. -->
+        <RegistryKey Root="HKCR" Key="mcpworld">
+          <RegistryValue Type="string" Value="URL:MCPWorld Protocol" KeyPath="yes" />
+          <RegistryValue Name="URL Protocol" Type="string" Value="" />
+        </RegistryKey>
+        <RegistryKey Root="HKCR" Key="mcpworld\shell\open\command">
+          <RegistryValue Type="string" Value="&quot;[INSTALLFOLDER]mcpworld-agent.exe&quot; &quot;%1&quot;" />
+        </RegistryKey>
+      </Component>
     </ComponentGroup>
   </Fragment>
 </Wix>
