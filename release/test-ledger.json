@@ -18,5 +18,25 @@
       "health": "ok",
       "note": "pytest=pass; smoke=ok"
     }
+  ],
+  "0.2.0-beta.4": [
+    {
+      "ts": 1782607543,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    },
+    {
+      "ts": 1782607547,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    },
+    {
+      "ts": 1782607551,
+      "result": "pass",
+      "health": "ok",
+      "note": "pytest=pass; smoke=ok"
+    }
   ]
 }
